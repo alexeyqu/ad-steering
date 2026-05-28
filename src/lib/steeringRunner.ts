@@ -8,14 +8,14 @@ import type {
   SteeringAction,
 } from "./types";
 import { hasInstagramAuthState, INSTAGRAM_AUTH_PATH } from "./instagramAuth";
+import { instagramExploreSearchUrl } from "./steeringPlanner";
 
-const PAID_LABELS = ["Sponsored", "Реклама", "Promoted", "Ad"];
+const SPONSORED_LABELS = ["Sponsored", "Реклама", "Promoted"];
 
-/** Pause between plan steps (human-paced). */
-const BETWEEN_ACTION_MS_MIN = 6000;
-const BETWEEN_ACTION_MS_MAX = 14000;
-
-/** Delays while scrolling a page. */
+const BETWEEN_ACTION_MS_MIN = 1200;
+const BETWEEN_ACTION_MS_MAX = 3200;
+const AFTER_POST_MS_MIN = 9000;
+const AFTER_POST_MS_MAX = 15000;
 const SCROLL_PAUSE_MS_MIN = 1200;
 const SCROLL_PAUSE_MS_MAX = 2800;
 
@@ -33,12 +33,30 @@ function makeLog(
   return { timestamp: new Date().toISOString(), ...partial };
 }
 
+function logAction(event: "click" | "sleep" | "scroll", message: string): void {
+  console.log(`[${event}] ${message}`);
+}
+
+function progressBar(done: number, total: number, width = 28): string {
+  const safeTotal = Math.max(1, total);
+  const ratio = Math.min(1, Math.max(0, done / safeTotal));
+  const filled = Math.round(ratio * width);
+  const bar = `${"=".repeat(filled)}${"-".repeat(width - filled)}`;
+  const pct = Math.round(ratio * 100);
+  return `[${bar}] ${pct}% (${done}/${total})`;
+}
+
+function logProgress(done: number, total: number, label: string): void {
+  console.log(`[progress] ${progressBar(done, total)} ${label}`);
+}
+
 async function humanPause(
   page: Page,
   minMs: number,
   maxMs: number
 ): Promise<number> {
   const durationMs = Math.round(minMs + Math.random() * (maxMs - minMs));
+  logAction("sleep", `${durationMs}ms`);
   await page.waitForTimeout(durationMs);
   return durationMs;
 }
@@ -47,10 +65,7 @@ async function ensureScreenshotDir(dir: string): Promise<void> {
   await fs.mkdir(dir, { recursive: true });
 }
 
-async function saveScreenshot(
-  page: Page,
-  absPath: string
-): Promise<boolean> {
+async function saveScreenshot(page: Page, absPath: string): Promise<boolean> {
   try {
     await page.screenshot({ path: absPath, fullPage: false });
     return true;
@@ -68,12 +83,104 @@ function toWebScreenshotPath(
   return `/${base}/${goalId}/${fileName}`.replace(/\/+/g, "/");
 }
 
+function textMatchesIntent(text: string, intent: string): boolean {
+  const lower = text.toLowerCase();
+  const intentLower = intent.toLowerCase().trim();
+  if (!intentLower) return true;
+  if (lower.includes(intentLower)) return true;
+
+  const tokens = intentLower.split(/[^a-z0-9]+/).filter((t) => t.length >= 3);
+  if (tokens.length === 0) return true;
+  return tokens.some((token) => lower.includes(token));
+}
+
+function articleIsSponsored(rawText: string): boolean {
+  return SPONSORED_LABELS.some((label) => rawText.includes(label));
+}
+
 async function lightScroll(page: Page, scrollCount = 3): Promise<void> {
   const viewportHeight = page.viewportSize()?.height ?? 800;
   for (let i = 0; i < scrollCount; i++) {
-    await page.mouse.wheel(0, viewportHeight * (0.25 + Math.random() * 0.2));
+    const delta = Math.round(viewportHeight * (0.25 + Math.random() * 0.2));
+    logAction("scroll", `wheel +${delta}px (${i + 1}/${scrollCount})`);
+    await page.mouse.wheel(0, delta);
     await humanPause(page, SCROLL_PAUSE_MS_MIN, SCROLL_PAUSE_MS_MAX);
   }
+}
+
+async function runInstagramClickPosts(
+  page: Page,
+  action: SteeringAction,
+  screenshotAbsPath: string,
+  screenshotWebPath: string
+): Promise<{ message: string; screenshotPath?: string }> {
+  const intent = action.query ?? "";
+  const maxClicks = action.maxClicks ?? 2;
+  const dwellMs = action.dwellMs ?? 10000;
+  const targetUrl =
+    action.url ??
+    (intent ? instagramExploreSearchUrl(intent) : "https://www.instagram.com/");
+
+  if (!page.url().includes("instagram.com") || !page.url().includes("explore")) {
+    await page.goto(targetUrl, { waitUntil: "domcontentloaded", timeout: 45000 });
+    await humanPause(page, 2000, 4000);
+  }
+
+  await lightScroll(page, 4 + Math.floor(Math.random() * 2));
+
+  let clicked = 0;
+  const articles = await page.$$("article");
+
+  for (const article of articles) {
+    if (clicked >= maxClicks) break;
+
+    let rawText = "";
+    try {
+      rawText = (await article.innerText()).trim();
+    } catch {
+      continue;
+    }
+
+    if (articleIsSponsored(rawText)) continue;
+    if (!textMatchesIntent(rawText, intent)) continue;
+
+    try {
+      const postLink = await article.$('a[href*="/p/"], a[href*="/reel/"]');
+      if (postLink) {
+        logAction("click", `open organic post link for intent "${intent}"`);
+        await postLink.click({ timeout: 8000 });
+      } else {
+        logAction("click", `open organic article for intent "${intent}"`);
+        await article.click({ timeout: 8000 });
+      }
+
+      await page.waitForLoadState("domcontentloaded", { timeout: 20000 }).catch(() => {});
+      await lightScroll(page, 1 + Math.floor(Math.random() * 2));
+      await page.waitForTimeout(dwellMs + Math.random() * 3000);
+      clicked++;
+
+      logAction("click", "go back to explore feed");
+      await page.goBack({ waitUntil: "domcontentloaded", timeout: 20000 }).catch(() => {
+        return page.goto(targetUrl, { waitUntil: "domcontentloaded", timeout: 45000 });
+      });
+      await humanPause(page, 1500, 3000);
+      await lightScroll(page, 1);
+    } catch {
+      // try next article
+    }
+  }
+
+  const saved = await saveScreenshot(page, screenshotAbsPath);
+
+  const message =
+    clicked > 0
+      ? `Opened ${clicked} organic post(s) matching "${intent}" and dwelled ~${Math.round(dwellMs / 1000)}s each (sponsored skipped).`
+      : `No matching organic posts found to open for "${intent}" (sponsored posts were skipped).`;
+
+  return {
+    message,
+    screenshotPath: saved ? screenshotWebPath : undefined,
+  };
 }
 
 async function runInstagramBrowse(
@@ -82,16 +189,20 @@ async function runInstagramBrowse(
   screenshotAbsPath: string,
   screenshotWebPath: string
 ): Promise<{ message: string; screenshotPath?: string }> {
-  const url = action.url ?? "https://www.instagram.com/";
+  const url =
+    action.url ??
+    (action.query
+      ? instagramExploreSearchUrl(action.query)
+      : "https://www.instagram.com/");
+
   await page.goto(url, { waitUntil: "domcontentloaded", timeout: 45000 });
   await humanPause(page, 2000, 4000);
-
-  await lightScroll(page, 2 + Math.floor(Math.random() * 2));
+  await lightScroll(page, 4 + Math.floor(Math.random() * 2));
 
   const saved = await saveScreenshot(page, screenshotAbsPath);
 
   return {
-    message: `Browsed Instagram at ${url} with slow scrolling (no sponsored clicks).`,
+    message: `Browsed Instagram at ${url} with extended scrolling (no sponsored clicks).`,
     screenshotPath: saved ? screenshotWebPath : undefined,
   };
 }
@@ -107,7 +218,7 @@ async function isInPaidContainer(
       node = node.parentElement;
     }
     return false;
-  }, PAID_LABELS);
+  }, [...SPONSORED_LABELS, "Ad"]);
 }
 
 async function clickOrganicGoogleResults(
@@ -130,15 +241,11 @@ async function clickOrganicGoogleResults(
         if (await isInPaidContainer(link)) continue;
 
         await link.click({ timeout: 5000 });
-        await page
-          .waitForLoadState("domcontentloaded", { timeout: 15000 })
-          .catch(() => {});
+        await page.waitForLoadState("domcontentloaded", { timeout: 15000 }).catch(() => {});
         await humanPause(page, 2000, 4000);
         clicked++;
 
-        await page
-          .goBack({ waitUntil: "domcontentloaded", timeout: 15000 })
-          .catch(() => {});
+        await page.goBack({ waitUntil: "domcontentloaded", timeout: 15000 }).catch(() => {});
         await humanPause(page, 1500, 3000);
       } catch {
         // try next result
@@ -193,29 +300,18 @@ async function runGoogleSearchAction(
   };
 }
 
-async function runAdPreferencesAction(
+async function runGoogleAdPreferencesAction(
   page: Page,
   action: SteeringAction,
   screenshotAbsPath: string,
-  screenshotWebPath: string,
-  goal: AdDietGoal
+  screenshotWebPath: string
 ): Promise<{ message: string; screenshotPath?: string }> {
-  const url =
-    action.url ??
-    (goalUsesInstagram(goal)
-      ? "https://www.instagram.com/accounts/ad_preferences/"
-      : "https://adssettings.google.com/");
-
-  if (isInstagramUrl(url)) {
-    return runInstagramBrowse(page, action, screenshotAbsPath, screenshotWebPath);
-  }
-
+  const url = action.url ?? "https://adssettings.google.com/";
   await page.goto(url, { waitUntil: "domcontentloaded", timeout: 30000 });
   await humanPause(page, 2000, 4000);
   const saved = await saveScreenshot(page, screenshotAbsPath);
-
   return {
-    message: `Opened ad preferences at ${url}. Manual updates only; no automated changes.`,
+    message: `Opened Google ad settings at ${url}. Manual updates only.`,
     screenshotPath: saved ? screenshotWebPath : undefined,
   };
 }
@@ -268,14 +364,25 @@ export async function runSteeringPlan(
   const page = await context.newPage();
 
   try {
+    logProgress(0, plan.actions.length, "starting");
     for (let i = 0; i < plan.actions.length; i++) {
       const action = plan.actions[i];
+      logProgress(i, plan.actions.length, `starting ${action.type}`);
 
       if (i > 0) {
+        const previousAction = plan.actions[i - 1];
+        const minPauseMs =
+          previousAction.type === "click_post"
+            ? AFTER_POST_MS_MIN
+            : BETWEEN_ACTION_MS_MIN;
+        const maxPauseMs =
+          previousAction.type === "click_post"
+            ? AFTER_POST_MS_MAX
+            : BETWEEN_ACTION_MS_MAX;
         const pauseMs = await humanPause(
           page,
-          BETWEEN_ACTION_MS_MIN,
-          BETWEEN_ACTION_MS_MAX
+          minPauseMs,
+          maxPauseMs
         );
         logs.push(
           makeLog({
@@ -308,21 +415,12 @@ export async function runSteeringPlan(
       try {
         let result: { message: string; screenshotPath?: string };
 
-        const instagramBrowse =
-          useInstagram &&
-          (action.type === "browse_results" ||
-            action.type === "visit_url" ||
-            (action.url && isInstagramUrl(action.url)));
-
         switch (action.type) {
           case "search":
             if (useInstagram) {
               result = await runInstagramBrowse(
                 page,
-                {
-                  ...action,
-                  url: `https://www.instagram.com/explore/search/keyword/?q=${encodeURIComponent(action.query ?? "")}`,
-                },
+                action,
                 screenshotAbsPath,
                 screenshotWebPath
               );
@@ -335,9 +433,17 @@ export async function runSteeringPlan(
               );
             }
             break;
+          case "click_post":
+            result = await runInstagramClickPosts(
+              page,
+              action,
+              screenshotAbsPath,
+              screenshotWebPath
+            );
+            break;
           case "visit_url":
           case "browse_results":
-            if (instagramBrowse || isInstagramUrl(action.url ?? "")) {
+            if (useInstagram || isInstagramUrl(action.url ?? "")) {
               result = await runInstagramBrowse(
                 page,
                 action,
@@ -356,13 +462,19 @@ export async function runSteeringPlan(
             }
             break;
           case "ad_preferences":
-            result = await runAdPreferencesAction(
-              page,
-              action,
-              screenshotAbsPath,
-              screenshotWebPath,
-              goal
-            );
+            if (useInstagram) {
+              result = {
+                message:
+                  "Skipped ad_preferences — no supported Instagram ad-settings URL in this build.",
+              };
+            } else {
+              result = await runGoogleAdPreferencesAction(
+                page,
+                action,
+                screenshotAbsPath,
+                screenshotWebPath
+              );
+            }
             break;
           case "wait":
             result = await runWaitAction(page, action);
@@ -392,6 +504,7 @@ export async function runSteeringPlan(
               (action.type !== "wait" ? screenshotWebPath : undefined),
           })
         );
+        logProgress(i + 1, plan.actions.length, `completed ${action.type}`);
       } catch (err) {
         logs.push(
           makeLog({
@@ -402,6 +515,7 @@ export async function runSteeringPlan(
             message: `Action failed: ${err}`,
           })
         );
+        logProgress(i + 1, plan.actions.length, `failed ${action.type}`);
       }
     }
   } finally {

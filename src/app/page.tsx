@@ -1,7 +1,13 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import type { InstagramScanResult, InstagramAdCandidate, InstagramOrganicPost } from "@/lib/types";
+import type {
+  AgentLogEntry,
+  InstagramScanResult,
+  InstagramAdCandidate,
+  InstagramOrganicPost,
+  SteeringPlan,
+} from "@/lib/types";
 
 export default function DashboardPage() {
   const [scans, setScans] = useState<InstagramScanResult[]>([]);
@@ -13,6 +19,26 @@ export default function DashboardPage() {
   const [maxAds, setMaxAds] = useState(20);
   const [headless, setHeadless] = useState(false);
   const [showLogs, setShowLogs] = useState(false);
+
+  const [positivePrompt, setPositivePrompt] = useState(
+    "electric kettles, tea, kitchen appliances"
+  );
+  const [negativePrompt, setNegativePrompt] = useState(
+    "crypto, gambling, payday loans, AI courses"
+  );
+  const [steeringHeadless, setSteeringHeadless] = useState(false);
+  const [steering, setSteering] = useState(false);
+  const [steeringError, setSteeringError] = useState<string | null>(null);
+  const [steeringResult, setSteeringResult] = useState<{
+    goalId: string;
+    planId: string;
+    actionCount: number;
+    successCount: number;
+    failureCount: number;
+    plan: SteeringPlan;
+    logs: AgentLogEntry[];
+  } | null>(null);
+  const [showSteeringLogs, setShowSteeringLogs] = useState(true);
 
   const loadScans = useCallback(async () => {
     try {
@@ -58,6 +84,30 @@ export default function DashboardPage() {
     setShowLogs(false);
   };
 
+  const handleSteering = async () => {
+    setSteering(true);
+    setSteeringError(null);
+    setSteeringResult(null);
+    try {
+      const res = await fetch("/api/steering/run", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          rawPositivePrompt: positivePrompt,
+          rawNegativePrompt: negativePrompt,
+          headless: steeringHeadless,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Steering failed");
+      setSteeringResult(data);
+    } catch (err: unknown) {
+      setSteeringError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setSteering(false);
+    }
+  };
+
   const toggleExpand = (id: string) => {
     setExpandedAds((prev) => {
       const next = new Set(prev);
@@ -72,12 +122,139 @@ export default function DashboardPage() {
         <div style={styles.headerInner}>
           <h1 style={styles.h1}>Ad Diet — Scanner</h1>
           <p style={styles.subtitle}>
-            Scans your Instagram feed for sponsored posts and extracts visible ad metadata without OCR.
+            Steer your ad diet on Instagram — set what you want more or less of, run
+            organic searches and post views, then scan your feed to inspect ads.
           </p>
         </div>
       </header>
 
       <main style={styles.main}>
+        <section style={styles.card}>
+          <h2 style={styles.h2}>Run Ad Diet steering</h2>
+          <p style={{ ...styles.muted, marginBottom: 12 }}>
+            Creates your goal, builds an Instagram search plan, and runs it in the browser
+            (many explore searches + organic post clicks). Does not click paid ads.
+          </p>
+          <label style={{ ...styles.label, width: "100%", maxWidth: 640 }}>
+            Ads I want more of
+            <textarea
+              value={positivePrompt}
+              onChange={(e) => setPositivePrompt(e.target.value)}
+              rows={2}
+              style={styles.textarea}
+              placeholder="electric kettles, tea, kitchen appliances"
+              disabled={steering}
+            />
+          </label>
+          <label style={{ ...styles.label, width: "100%", maxWidth: 640, marginTop: 12 }}>
+            Ads I want fewer of
+            <textarea
+              value={negativePrompt}
+              onChange={(e) => setNegativePrompt(e.target.value)}
+              rows={2}
+              style={styles.textarea}
+              placeholder="crypto, gambling, payday loans"
+              disabled={steering}
+            />
+          </label>
+          <div style={{ ...styles.controls, marginTop: 12 }}>
+            <label style={styles.label}>
+              Headless
+              <select
+                value={steeringHeadless ? "true" : "false"}
+                onChange={(e) => setSteeringHeadless(e.target.value === "true")}
+                style={styles.input}
+                disabled={steering}
+              >
+                <option value="false">No (show browser)</option>
+                <option value="true">Yes</option>
+              </select>
+            </label>
+          </div>
+          <div style={{ marginTop: 16, display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
+            <button
+              onClick={handleSteering}
+              disabled={steering || !positivePrompt.trim()}
+              style={steering ? styles.buttonDisabled : styles.button}
+            >
+              {steering ? "Running steering… (may take a while)" : "Run steering"}
+            </button>
+          </div>
+          {steering && (
+            <p style={styles.hint}>
+              Browser will open on the server machine. Watch the terminal for progress
+              ([progress], [click], [scroll], [sleep]). This request blocks until finished.
+            </p>
+          )}
+          {steeringError && (
+            <div style={styles.error}>
+              <strong>Error:</strong> {steeringError}
+              <br />
+              <small>
+                Tip: run{" "}
+                <code>
+                  npm run steering:run -- --positive=&quot;…&quot; --negative=&quot;…&quot;
+                </code>{" "}
+                in a terminal if the API times out.
+              </small>
+            </div>
+          )}
+          {steeringResult && (
+            <div style={{ marginTop: 16 }}>
+              <p style={{ fontSize: 14 }}>
+                <strong>Done.</strong> Goal <code>{steeringResult.goalId}</code>, plan{" "}
+                <code>{steeringResult.planId}</code> — {steeringResult.actionCount} steps,{" "}
+                {steeringResult.successCount} succeeded, {steeringResult.failureCount} failed.
+              </p>
+              <p style={styles.muted}>
+                Screenshots: <code>public/screenshots/{steeringResult.goalId}/</code>
+              </p>
+              <button
+                type="button"
+                onClick={() => setShowSteeringLogs((v) => !v)}
+                style={{ ...styles.buttonSecondary, marginTop: 8 }}
+              >
+                {showSteeringLogs ? "Hide agent logs" : "Show agent logs"}
+              </button>
+              {showSteeringLogs && (
+                <div style={{ ...styles.logBox, marginTop: 8, maxHeight: 240 }}>
+                  {steeringResult.logs.map((l, i) => (
+                    <div
+                      key={i}
+                      style={{
+                        color:
+                          l.status === "failed"
+                            ? "#ff6b6b"
+                            : l.status === "success"
+                              ? "#a8e6a3"
+                              : "#e0e0e0",
+                      }}
+                    >
+                      <span style={{ opacity: 0.6, fontSize: 11 }}>
+                        {l.timestamp.slice(11, 19)}
+                      </span>{" "}
+                      [{l.status}] {l.message}
+                    </div>
+                  ))}
+                </div>
+              )}
+              <details style={{ marginTop: 12, fontSize: 13 }}>
+                <summary style={{ cursor: "pointer", fontWeight: 600 }}>
+                  Planned actions ({steeringResult.plan.actions.length})
+                </summary>
+                <ul style={{ marginTop: 8, paddingLeft: 20 }}>
+                  {steeringResult.plan.actions.map((a) => (
+                    <li key={a.id} style={{ marginBottom: 4 }}>
+                      <strong>{a.type}</strong>{" "}
+                      {a.query ?? a.url ?? a.reason}
+                    </li>
+                  ))}
+                </ul>
+              </details>
+            </div>
+          )}
+        </section>
+
         <section style={styles.card}>
           <h2 style={styles.h2}>Run a new scan</h2>
           <div style={styles.controls}>
@@ -366,6 +543,7 @@ const styles = {
   controls: { display: "flex", gap: 20, flexWrap: "wrap" as const, marginTop: 8 },
   label: { display: "flex", flexDirection: "column" as const, gap: 4, fontSize: 14, fontWeight: 500 },
   input: { marginTop: 2, padding: "6px 10px", borderRadius: 4, border: "1px solid #ccc", fontSize: 14, width: 150 },
+  textarea: { marginTop: 2, padding: "8px 10px", borderRadius: 4, border: "1px solid #ccc", fontSize: 14, width: "100%", fontFamily: "inherit", resize: "vertical" as const },
   button: { background: "#667eea", color: "white", border: "none", borderRadius: 6, padding: "10px 22px", fontSize: 15, fontWeight: 600, cursor: "pointer" },
   buttonDisabled: { background: "#aaa", color: "white", border: "none", borderRadius: 6, padding: "10px 22px", fontSize: 15, fontWeight: 600, cursor: "not-allowed" },
   buttonSecondary: { background: "white", color: "#667eea", border: "1px solid #667eea", borderRadius: 6, padding: "8px 16px", fontSize: 14, cursor: "pointer" },

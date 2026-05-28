@@ -86,6 +86,7 @@ export type SteeringActionType =
   | "search"
   | "visit_url"
   | "browse_results"
+  | "click_post"
   | "ad_preferences"
   | "wait";
 
@@ -98,6 +99,10 @@ export type SteeringAction = {
   safetyNote?: string;
   /** Used by wait actions (milliseconds). */
   durationMs?: number;
+  /** Max organic posts to open for click_post actions. */
+  maxClicks?: number;
+  /** Time to stay on an opened post (milliseconds). */
+  dwellMs?: number;
 };
 
 export type SteeringPlan = {

@@ -11,7 +11,7 @@ Opens Instagram in a real browser, scrolls the feed, detects sponsored posts usi
 3. Scrolls the feed looking for posts with "Sponsored" / "Реклама" / "Promoted" labels
 4. Extracts visible text, links, advertiser handle, and CTA from each detected ad
 5. Saves screenshots and scan JSON under `data/scans/`
-6. Optionally builds a **steering plan** (explore search, hashtags, ad preferences on Instagram only)
+6. Optionally builds a **steering plan** (many Instagram explore searches, hashtag browses, organic post clicks)
 7. Runs that plan with human-paced pauses — no Google, retailers, or paid-ad clicks
 8. Displays results in a local web dashboard
 
@@ -49,77 +49,61 @@ Saved result: data/scans/scan_....json
 Screenshots:  public/screenshots/scan_.../
 ```
 
-## Steering workflow (CLI)
+## Run steering (goal + plan + browser)
 
-Steering stays on **Instagram only** (explore search, hashtags, ad preferences). It does not open Google, Argos, Currys, or similar sites.
+One command creates your goal, builds the Instagram plan, and runs it in the browser.
 
-### 1. Create a goal
+Steering stays on **Instagram only** (many explore searches, hashtags, organic post clicks). No Google, retailers, or paid-ad clicks.
 
-Define what ads you want more and less of:
+### CLI
 
 ```bash
-npm run create:goal -- \
+npm run steering:run -- \
   --positive="electric kettles, tea, kitchen appliances" \
   --negative="crypto, gambling, payday loans"
 ```
 
 | Flag | Required | Description |
 |------|----------|-------------|
-| `--positive` | Yes | Comma-separated topics you want more ads about |
-| `--negative` | No | Comma-separated topics you want fewer ads about |
-| `--window-days` | No | Days you plan to wait before re-scanning to compare results (default: `7`). Stored on the goal only — not used while browsing. Alias: `--days` |
-| `--platforms` | No | Default: `instagram`. Use `instagram` only unless you explicitly want Google-only steering (`google`) |
+| `--positive` | Yes | What ads you want more of |
+| `--negative` | No | What ads you want fewer of |
+| `--window-days` | No | Days before you re-scan to compare (default: `7`, metadata only) |
+| `--headless` | No | Run without a visible browser window |
 
-Output includes a `goal_...` id. Goals are stored in `data/goals.json`.
+Terminal output includes `[progress]`, `[click]`, `[scroll]`, and `[sleep]` lines. Saves:
 
-### 2. Create a steering plan
+- Goal: `data/goals.json`
+- Plan: `data/plans/plan_....json`
+- Logs: `data/logs/{goalId}.json`
+- Screenshots: `public/screenshots/{goalId}/`
 
-```bash
-npm run create:plan -- --goalId=goal_abc123
-```
-
-Writes `data/plans/plan_....json` and prints each planned action (Instagram explore URLs, pauses, ad preferences).
-
-### 3. Run the plan
+### Dashboard UI
 
 ```bash
-npm run run:plan -- --planId=plan_abc123
+npm run dev
 ```
 
-Opens a browser (headed by default), runs each action with **6–14 second** random pauses between steps, and saves:
+Open http://localhost:3000. Use **Run Ad Diet steering** — enter desired/unwanted ads and click **Run steering**. Same flow as the CLI (blocks until finished).
 
-- Agent logs: `data/logs/{goalId}.json`
-- Screenshots: `public/screenshots/{goalId}/action-act_1.png`, etc.
-
-Add `--headless` to run without a visible window (less reliable for login checks).
-
-### End-to-end example
+### Full loop example
 
 ```bash
-# Baseline: what ads are showing now?
-npm run scan:instagram
-
-# Goal + plan + steer
-npm run create:goal -- --positive="tea, electric kettles" --negative="crypto"
-npm run create:plan -- --goalId=goal_<id from previous command>
-npm run run:plan -- --planId=plan_<id from previous command>
-
-# Later: scan again and compare (dashboard / future report)
-npm run scan:instagram
+npm run scan:instagram          # baseline ads
+npm run steering:run -- --positive="tea, kettles" --negative="crypto"
+npm run scan:instagram          # after steering
 ```
 
-## API (optional)
+## API
 
 With `npm run dev` running:
 
 | Method | Path | Purpose |
 |--------|------|---------|
-| `POST` | `/api/goals` | Create goal (JSON body: `rawPositivePrompt`, `rawNegativePrompt`, …) |
-| `POST` | `/api/goals/:goalId/create-plan` | Generate and save steering plan |
-| `POST` | `/api/plans/:planId/run` | Execute plan (blocks until finished) |
-| `GET` | `/api/goals/:goalId/logs` | Agent log entries for a goal |
+| `POST` | `/api/steering/run` | Create goal, plan, and run (one shot) |
+| `POST` | `/api/scan-instagram` | Feed scan |
+| `GET` | `/api/scans` | List scans |
 
-Playwright routes may time out on long runs; prefer the CLI for scans and steering.
+Playwright routes may time out on long runs; prefer `npm run steering:run` in a terminal if the UI request fails.
 
 ## Open the dashboard
 
@@ -129,7 +113,7 @@ npm run dev
 
 Open http://localhost:3000.
 
-The dashboard lists saved scans (newest first) with advertiser, CTA, text preview, links, and screenshots. You can also trigger a scan from the UI (the request blocks until the scan finishes).
+Steering at the top; scan results below. Lists saved scans with advertiser, CTA, text preview, links, and screenshots.
 
 ## Limitations
 
@@ -156,22 +140,19 @@ Ad Diet is for inspecting and steering ad relevance on accounts you own.
     types.ts
     goals.ts              — create Ad Diet goals
     intentParser.ts
-    steeringPlanner.ts    — Module 6: plan generator
-    steeringRunner.ts     — Module 7: Playwright runner
+    executeSteering.ts    — goal + plan + run
+    steeringPlanner.ts
+    steeringRunner.ts
     instagramAnalyzer.ts
     instagramAuth.ts
     storage.ts
   /scripts
     scan.ts
-    createGoal.ts
-    createPlan.ts
-    runSteeringPlan.ts
+    runSteering.ts
   /app
     page.tsx
     /api
-      /goals
-      /goals/[goalId]/create-plan
-      /plans/[planId]/run
+      /steering/run
       /scan-instagram
       /scans
 /data

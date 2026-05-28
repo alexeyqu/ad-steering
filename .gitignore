@@ -5,8 +5,8 @@ dist-scanner/
 # Auth state — never commit session tokens
 .auth/
 
-# Scan data — local only
-data/scans/
+# Local data — goals, scans, plans, logs (never commit)
+data/
 public/screenshots/
 
 # Env
