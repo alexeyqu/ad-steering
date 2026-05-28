@@ -116,11 +116,8 @@ const [steeringHeadless, setSteeringHeadless] = useState(false);
     <div style={{ minHeight: "100vh", display: "flex", flexDirection: "column" }}>
       <header style={styles.header}>
         <div style={styles.headerInner}>
-          <h1 style={styles.h1}>Ad Diet — Scanner</h1>
-          <p style={styles.subtitle}>
-            Steer your ad diet on Instagram — set what you want more or less of, run
-            organic searches and post views, then scan your feed to inspect ads.
-          </p>
+          <h1 style={styles.h1}>adJust</h1>
+          <p style={styles.subtitle}>Adjust what ads learn about you.</p>
         </div>
       </header>
 
@@ -240,47 +237,81 @@ const [steeringHeadless, setSteeringHeadless] = useState(false);
           )}
         </section>
 
-        <section style={styles.card}>
-          <h2 style={styles.h2}>Run a new scan</h2>
-          <div style={styles.controls}>
-            <label style={styles.label}>
-              Max scrolls
-              <input type="number" min={1} max={100} value={maxScrolls}
-                onChange={(e) => setMaxScrolls(Number(e.target.value))} style={styles.input} />
-            </label>
-            <label style={styles.label}>
-              Max ads
-              <input type="number" min={1} max={100} value={maxAds}
-                onChange={(e) => setMaxAds(Number(e.target.value))} style={styles.input} />
-            </label>
-            <label style={styles.label}>
-              Headless
-              <select value={headless ? "true" : "false"}
-                onChange={(e) => setHeadless(e.target.value === "true")} style={styles.input}>
-                <option value="false">No (show browser)</option>
-                <option value="true">Yes</option>
-              </select>
-            </label>
-          </div>
-          <div style={{ marginTop: 16, display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
-            <button onClick={handleScan} disabled={scanning}
-              style={scanning ? styles.buttonDisabled : styles.button}>
-              {scanning ? "Scanning... (browser will open)" : "Run Instagram scan"}
-            </button>
-            <button onClick={loadScans} style={styles.buttonSecondary}>Refresh scans</button>
-          </div>
-          {scanning && (
-            <p style={styles.hint}>
-              A browser window has opened. Log in if prompted, then press Enter in the terminal where you started the app.
-            </p>
-          )}
-          {scanError && (
-            <div style={styles.error}>
-              <strong>Error:</strong> {scanError}
-              <br />
-              <small>Tip: if the API times out, run <code>npm run scan:instagram</code> in the terminal, then click "Refresh scans".</small>
+        <section style={styles.scanPanel}>
+          {/* Panel header */}
+          <div style={styles.scanPanelHeader}>
+            <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", flexWrap: "wrap", gap: 12 }}>
+              <div>
+                <span style={styles.eyebrow}>Current MVP</span>
+                <h2 style={styles.scanTitle}>Instagram Feed Analyzer</h2>
+                <p style={styles.scanDesc}>
+                  Detect sponsored posts from the DOM, save screenshots, and review your current ad snapshot.
+                </p>
+              </div>
+              <div style={styles.badges}>
+                <span style={styles.badge}>No paid ad clicks</span>
+                <span style={styles.badge}>No login automation</span>
+                <span style={styles.badge}>No OCR</span>
+              </div>
             </div>
-          )}
+          </div>
+
+          {/* Controls */}
+          <div style={styles.scanBody}>
+            <div style={styles.controls}>
+              <label style={styles.label}>
+                Max scrolls
+                <input type="number" min={1} max={100} value={maxScrolls}
+                  onChange={(e) => setMaxScrolls(Number(e.target.value))} style={styles.input} />
+              </label>
+              <label style={styles.label}>
+                Max ads
+                <input type="number" min={1} max={100} value={maxAds}
+                  onChange={(e) => setMaxAds(Number(e.target.value))} style={styles.input} />
+              </label>
+              <label style={styles.label}>
+                Headless
+                <select value={headless ? "true" : "false"}
+                  onChange={(e) => setHeadless(e.target.value === "true")} style={styles.input}>
+                  <option value="false">No (show browser)</option>
+                  <option value="true">Yes</option>
+                </select>
+              </label>
+            </div>
+
+            <div style={{ marginTop: 20, display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
+              <button onClick={handleScan} disabled={scanning}
+                style={scanning ? styles.buttonDisabled : styles.buttonPrimary}>
+                {scanning ? "Scanning feed…" : "Run Instagram scan"}
+              </button>
+              <button onClick={loadScans} style={styles.buttonSecondary}>Refresh</button>
+              {!scanning && !scanError && (
+                <span style={styles.statusReady}>● Ready</span>
+              )}
+              {scanning && (
+                <span style={styles.statusRunning}>● Running</span>
+              )}
+            </div>
+
+            {scanning && (
+              <p style={styles.hint}>
+                A browser window has opened. Log in if prompted, then press Enter in the terminal.
+              </p>
+            )}
+            {scanError && (
+              <div style={styles.errorBox}>
+                <strong>Failed —</strong> {scanError}
+                <br />
+                <small style={{ opacity: 0.8 }}>Run <code>npm run scan:instagram</code> in the terminal, then Refresh.</small>
+              </div>
+            )}
+          </div>
+
+          {/* Safety note */}
+          <div style={styles.safetyNote}>
+            adJust inspects visible sponsored posts in your own browser session. It does not click paid ads,
+            automate login, bypass platform protections, or use OCR.
+          </div>
         </section>
 
         <div style={styles.twoCol}>
@@ -517,32 +548,96 @@ function AdExpanded({ ad }: { ad: InstagramAdCandidate }) {
 }
 
 const styles = {
-  header: { background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)", color: "white", padding: "32px 24px" },
+  // ── Page chrome ──────────────────────────────────────────────────────────
+  header: { background: "#ffffff", borderBottom: "1px solid #e5e7eb", color: "#111827", padding: "18px 24px" },
   headerInner: { maxWidth: 1100, margin: "0 auto" },
-  h1: { fontSize: 24, fontWeight: 700, marginBottom: 6 },
+  h1: { fontSize: 22, fontWeight: 700, marginBottom: 2, letterSpacing: "-0.3px" },
   h2: { fontSize: 18, fontWeight: 600, marginBottom: 12 },
-  subtitle: { opacity: 0.85, fontSize: 14 },
-  main: { maxWidth: 1100, margin: "0 auto", padding: "24px 16px", flex: 1 },
+  subtitle: { fontSize: 13, color: "#6b7280", marginTop: 2 },
+  main: { maxWidth: 1100, margin: "0 auto", padding: "28px 16px", flex: 1, background: "#f5f6f8", minHeight: "calc(100vh - 64px)" },
   twoCol: { display: "flex", gap: 20, flexWrap: "wrap" as const, marginTop: 20 },
-  card: { background: "white", borderRadius: 8, padding: 20, boxShadow: "0 1px 4px rgba(0,0,0,0.08)" },
+  card: { background: "white", borderRadius: 10, padding: 20, border: "1px solid #e5e7eb", boxShadow: "0 1px 3px rgba(0,0,0,0.06)" },
+
+  // ── Scan panel ───────────────────────────────────────────────────────────
+  scanPanel: {
+    background: "white",
+    borderRadius: 12,
+    border: "1px solid #e5e7eb",
+    boxShadow: "0 1px 4px rgba(0,0,0,0.06)",
+    overflow: "hidden" as const,
+    marginBottom: 0,
+  },
+  scanPanelHeader: {
+    padding: "20px 24px 18px",
+    borderBottom: "1px solid #f0f0f0",
+    background: "#fafafa",
+  },
+  scanBody: { padding: "20px 24px" },
+  eyebrow: {
+    display: "inline-block" as const,
+    fontSize: 11,
+    fontWeight: 600,
+    letterSpacing: "0.08em",
+    textTransform: "uppercase" as const,
+    color: "#2563eb",
+    marginBottom: 6,
+  },
+  scanTitle: { fontSize: 17, fontWeight: 700, color: "#111827", marginBottom: 4 },
+  scanDesc: { fontSize: 13, color: "#6b7280", lineHeight: 1.5, maxWidth: 520 },
+  badges: { display: "flex", gap: 6, flexWrap: "wrap" as const, alignItems: "flex-start" },
+  badge: {
+    fontSize: 11,
+    fontWeight: 500,
+    color: "#374151",
+    background: "#f3f4f6",
+    border: "1px solid #e5e7eb",
+    borderRadius: 20,
+    padding: "3px 10px",
+    whiteSpace: "nowrap" as const,
+  },
+  safetyNote: {
+    borderTop: "1px solid #f0f0f0",
+    padding: "12px 24px",
+    fontSize: 12,
+    color: "#9ca3af",
+    lineHeight: 1.55,
+    background: "#fafafa",
+  },
+  statusReady:  { fontSize: 12, fontWeight: 500, color: "#16a34a" },
+  statusRunning: { fontSize: 12, fontWeight: 500, color: "#2563eb" },
+  errorBox: {
+    marginTop: 14,
+    background: "#fffbf0",
+    border: "1px solid #f59e0b",
+    borderRadius: 6,
+    padding: "10px 14px",
+    fontSize: 13,
+    color: "#92400e",
+    lineHeight: 1.5,
+  },
+
+  // ── Shared form elements ──────────────────────────────────────────────────
   controls: { display: "flex", gap: 20, flexWrap: "wrap" as const, marginTop: 8 },
-  label: { display: "flex", flexDirection: "column" as const, gap: 4, fontSize: 14, fontWeight: 500 },
-  input: { marginTop: 2, padding: "6px 10px", borderRadius: 4, border: "1px solid #ccc", fontSize: 14, width: 150 },
-  textarea: { marginTop: 2, padding: "8px 10px", borderRadius: 4, border: "1px solid #ccc", fontSize: 14, width: "100%", fontFamily: "inherit", resize: "vertical" as const },
-  button: { background: "#667eea", color: "white", border: "none", borderRadius: 6, padding: "10px 22px", fontSize: 15, fontWeight: 600, cursor: "pointer" },
-  buttonDisabled: { background: "#aaa", color: "white", border: "none", borderRadius: 6, padding: "10px 22px", fontSize: 15, fontWeight: 600, cursor: "not-allowed" },
-  buttonSecondary: { background: "white", color: "#667eea", border: "1px solid #667eea", borderRadius: 6, padding: "8px 16px", fontSize: 14, cursor: "pointer" },
-  linkBtn: { background: "none", border: "none", color: "#0066cc", cursor: "pointer", fontSize: 13, padding: "2px 6px", borderRadius: 4 },
-  hint: { marginTop: 12, fontSize: 13, color: "#555", fontStyle: "italic" },
-  error: { marginTop: 12, background: "#fdf0ef", border: "1px solid #e74c3c", borderRadius: 4, padding: 12, fontSize: 13, color: "#c0392b" },
-  muted: { color: "#888", fontSize: 13 },
-  organicCard: { width: 160, border: "1px solid #e0e0e0", borderRadius: 6, overflow: "hidden" as const, background: "white", boxShadow: "0 1px 3px rgba(0,0,0,0.06)" },
+  label: { display: "flex", flexDirection: "column" as const, gap: 4, fontSize: 13, fontWeight: 500, color: "#374151" },
+  input: { marginTop: 2, padding: "6px 10px", borderRadius: 6, border: "1px solid #d1d5db", fontSize: 14, width: 150, color: "#111827", background: "white" },
+  textarea: { marginTop: 2, padding: "8px 10px", borderRadius: 6, border: "1px solid #d1d5db", fontSize: 14, width: "100%", fontFamily: "inherit", resize: "vertical" as const },
+  buttonPrimary: { background: "#2563eb", color: "white", border: "none", borderRadius: 7, padding: "9px 22px", fontSize: 14, fontWeight: 600, cursor: "pointer" },
+  button:        { background: "#2563eb", color: "white", border: "none", borderRadius: 7, padding: "9px 22px", fontSize: 14, fontWeight: 600, cursor: "pointer" },
+  buttonDisabled: { background: "#d1d5db", color: "#9ca3af", border: "none", borderRadius: 7, padding: "9px 22px", fontSize: 14, fontWeight: 600, cursor: "not-allowed" },
+  buttonSecondary: { background: "white", color: "#374151", border: "1px solid #d1d5db", borderRadius: 7, padding: "8px 16px", fontSize: 13, cursor: "pointer" },
+  linkBtn: { background: "none", border: "none", color: "#2563eb", cursor: "pointer", fontSize: 13, padding: "2px 6px", borderRadius: 4 },
+  hint: { marginTop: 10, fontSize: 13, color: "#6b7280", fontStyle: "italic" },
+  error: { marginTop: 12, background: "#fffbf0", border: "1px solid #f59e0b", borderRadius: 6, padding: 12, fontSize: 13, color: "#92400e" },
+  muted: { color: "#9ca3af", fontSize: 13 },
+
+  // ── Results ───────────────────────────────────────────────────────────────
+  organicCard: { width: 160, border: "1px solid #e5e7eb", borderRadius: 8, overflow: "hidden" as const, background: "white", boxShadow: "0 1px 3px rgba(0,0,0,0.05)" },
   table: { width: "100%", borderCollapse: "collapse" as const, fontSize: 13 },
-  th: { textAlign: "left" as const, padding: "8px 10px", background: "#f4f5f7", borderBottom: "2px solid #e0e0e0", fontWeight: 600, whiteSpace: "nowrap" as const },
-  td: { padding: "8px 10px", borderBottom: "1px solid #eee", verticalAlign: "top" as const },
+  th: { textAlign: "left" as const, padding: "8px 10px", background: "#f9fafb", borderBottom: "1px solid #e5e7eb", fontWeight: 600, whiteSpace: "nowrap" as const, color: "#374151" },
+  td: { padding: "8px 10px", borderBottom: "1px solid #f3f4f6", verticalAlign: "top" as const },
   tr: { cursor: "default" },
-  trSelected: { background: "#eef2ff", cursor: "default" },
-  pre: { background: "#f8f9fa", border: "1px solid #e0e0e0", borderRadius: 4, padding: 10, fontSize: 12, whiteSpace: "pre-wrap" as const, wordBreak: "break-word" as const, maxHeight: 300, overflowY: "auto" as const, marginTop: 4 },
-  logBox: { background: "#1a1a2e", color: "#e0e0e0", borderRadius: 6, padding: 12, fontSize: 12, fontFamily: "monospace", maxHeight: 300, overflowY: "auto" as const, marginBottom: 16, lineHeight: 1.7 },
-  footer: { background: "#f4f5f7", borderTop: "1px solid #e0e0e0", padding: "16px 24px", textAlign: "center" as const, fontSize: 12, color: "#666" },
+  trSelected: { background: "#eff6ff", cursor: "default" },
+  pre: { background: "#f9fafb", border: "1px solid #e5e7eb", borderRadius: 4, padding: 10, fontSize: 12, whiteSpace: "pre-wrap" as const, wordBreak: "break-word" as const, maxHeight: 300, overflowY: "auto" as const, marginTop: 4 },
+  logBox: { background: "#1e1e2e", color: "#e0e0e0", borderRadius: 6, padding: 12, fontSize: 12, fontFamily: "monospace", maxHeight: 300, overflowY: "auto" as const, marginBottom: 16, lineHeight: 1.7 },
+  footer: { background: "#f9fafb", borderTop: "1px solid #e5e7eb", padding: "16px 24px", textAlign: "center" as const, fontSize: 12, color: "#9ca3af" },
 };
