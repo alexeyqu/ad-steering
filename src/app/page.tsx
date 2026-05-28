@@ -1,652 +1,385 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import Link from "next/link";
+import { useState, useEffect, useCallback } from "react";
+import type { InstagramScanResult, InstagramAdCandidate, InstagramOrganicPost } from "@/lib/types";
 
-const SCAN_STEPS = [
-  { delay: 0,    type: "cmd",  text: "$ npm run scan:instagram" },
-  { delay: 800,  type: "info", text: "Opening Instagram in Chromium…" },
-  { delay: 1500, type: "info", text: "Feed loaded. Scroll 3 / 20" },
-  { delay: 2200, type: "ad",   handle: "marcusbygoldmansachs", cta: "Learn more",  preview: "Save smarter with Marcus." },
-  { delay: 3000, type: "ad",   handle: "freetrade",            cta: "Sign up",     preview: "Commission-free investing." },
-  { delay: 3800, type: "ad",   handle: "lloydsbank",           cta: "Apply now",   preview: "Start your financial journey." },
-  { delay: 4700, type: "done", text: "Scan complete. 3 ads detected." },
-];
+export default function DashboardPage() {
+  const [scans, setScans] = useState<InstagramScanResult[]>([]);
+  const [selectedScan, setSelectedScan] = useState<InstagramScanResult | null>(null);
+  const [expandedAds, setExpandedAds] = useState<Set<string>>(new Set());
+  const [scanning, setScanning] = useState(false);
+  const [scanError, setScanError] = useState<string | null>(null);
+  const [maxScrolls, setMaxScrolls] = useState(20);
+  const [maxAds, setMaxAds] = useState(20);
+  const [headless, setHeadless] = useState(false);
+  const [showLogs, setShowLogs] = useState(false);
 
-export default function LandingPage() {
-  const [step, setStep] = useState(-1);
-
-  useEffect(() => {
-    const timeouts: ReturnType<typeof setTimeout>[] = [];
-
-    const run = () => {
-      setStep(-1);
-      SCAN_STEPS.forEach((s, i) => {
-        timeouts.push(setTimeout(() => setStep(i), s.delay + 600));
-      });
-      timeouts.push(setTimeout(() => { run(); }, 8500));
-    };
-
-    const boot = setTimeout(run, 400);
-    return () => { clearTimeout(boot); timeouts.forEach(clearTimeout); };
+  const loadScans = useCallback(async () => {
+    try {
+      const res = await fetch("/api/scans");
+      const data = await res.json();
+      setScans(data);
+    } catch {
+      // ignore
+    }
   }, []);
 
+  useEffect(() => {
+    loadScans();
+  }, [loadScans]);
+
+  const handleScan = async () => {
+    setScanning(true);
+    setScanError(null);
+    try {
+      const res = await fetch("/api/scan-instagram", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ maxScrolls, maxAds, headless }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Scan failed");
+      await loadScans();
+      const scanRes = await fetch(`/api/scans/${data.scanId}`);
+      const scanData = await scanRes.json();
+      setSelectedScan(scanData);
+    } catch (err: unknown) {
+      setScanError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setScanning(false);
+    }
+  };
+
+  const handleSelectScan = async (scanId: string) => {
+    const res = await fetch(`/api/scans/${scanId}`);
+    const data = await res.json();
+    setSelectedScan(data);
+    setExpandedAds(new Set());
+    setShowLogs(false);
+  };
+
+  const toggleExpand = (id: string) => {
+    setExpandedAds((prev) => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+  };
+
   return (
-    <>
-      <style dangerouslySetInnerHTML={{ __html: CSS }} />
-      <div className="ld">
-
-        {/* ── NAV ─────────────────────────────────────────────── */}
-        <nav className="ld-nav">
-          <div className="ld-wrap ld-nav-inner">
-            <span className="ld-logo">AD DIET</span>
-            <div className="ld-nav-right">
-              <a href="#how" className="ld-nav-link">How it works</a>
-              <a href="https://github.com/alexeyqu/ad-steering" target="_blank" rel="noreferrer" className="ld-nav-link">GitHub</a>
-              <Link href="/dashboard" className="ld-pill-cta">Open Scanner →</Link>
-            </div>
-          </div>
-        </nav>
-
-        {/* ── HERO ────────────────────────────────────────────── */}
-        <section className="ld-hero">
-          <div className="ld-wrap ld-hero-grid">
-
-            <div className="ld-hero-copy">
-              <div className="ld-eyebrow">Feed Intelligence</div>
-              <h1 className="ld-h1">
-                See every ad<br />
-                <em>they show you.</em>
-              </h1>
-              <p className="ld-lead">
-                Ad Diet opens Instagram in a real browser, scrolls your feed, and
-                surfaces every sponsored post — extracting handles, CTAs, and screenshots
-                directly from the visible DOM. No OCR. No guessing.
-              </p>
-              <div className="ld-ctas">
-                <Link href="/dashboard" className="ld-btn-accent">Open Scanner</Link>
-                <a href="https://github.com/alexeyqu/ad-steering" target="_blank" rel="noreferrer" className="ld-btn-ghost">View on GitHub ↗</a>
-              </div>
-            </div>
-
-            <div className="ld-hero-terminal">
-              <div className="ld-term">
-                <div className="ld-term-bar">
-                  <span className="ld-dot ld-dot-r" />
-                  <span className="ld-dot ld-dot-y" />
-                  <span className="ld-dot ld-dot-g" />
-                  <span className="ld-term-title">ad-diet — scan</span>
-                </div>
-                <div className="ld-term-body">
-                  {SCAN_STEPS.map((s, i) => {
-                    if (i > step) return null;
-                    if (s.type === "cmd") return (
-                      <div key={i} className="ld-tline ld-tline-cmd">{s.text}</div>
-                    );
-                    if (s.type === "info") return (
-                      <div key={i} className="ld-tline ld-tline-muted">{s.text}</div>
-                    );
-                    if (s.type === "ad") return (
-                      <div key={i} className="ld-tline ld-tline-ad">
-                        <span className="ld-ad-badge">Ad</span>
-                        <span className="ld-t-handle">@{s.handle}</span>
-                        <span className="ld-t-cta">{s.cta}</span>
-                        <span className="ld-t-preview">{s.preview}</span>
-                      </div>
-                    );
-                    if (s.type === "done") return (
-                      <div key={i} className="ld-tline ld-tline-done">✓ {s.text}</div>
-                    );
-                    return null;
-                  })}
-                  {step >= 0 && step < SCAN_STEPS.length - 1 && (
-                    <span className="ld-cursor">█</span>
-                  )}
-                </div>
-              </div>
-            </div>
-
-          </div>
-        </section>
-
-        {/* ── TRUST STRIP ──────────────────────────────────────── */}
-        <div className="ld-trust-wrap">
-          <div className="ld-wrap ld-trust">
-            {["DOM only", "No OCR", "No ad clicks", "Playwright", "No credential storage", "Open source", "Privacy first", "TypeScript"].map((t) => (
-              <span key={t} className="ld-trust-pill">{t}</span>
-            ))}
-          </div>
+    <div style={{ minHeight: "100vh", display: "flex", flexDirection: "column" }}>
+      <header style={styles.header}>
+        <div style={styles.headerInner}>
+          <h1 style={styles.h1}>Ad Diet — Scanner</h1>
+          <p style={styles.subtitle}>
+            Scans your Instagram feed for sponsored posts and extracts visible ad metadata without OCR.
+          </p>
         </div>
+      </header>
 
-        {/* ── HOW IT WORKS ─────────────────────────────────────── */}
-        <section className="ld-section" id="how">
-          <div className="ld-wrap">
-            <div className="ld-section-hd">
-              <div className="ld-eyebrow">Process</div>
-              <h2 className="ld-h2">Three steps to full clarity.</h2>
-            </div>
-            <div className="ld-steps">
-              {[
-                {
-                  n: "01", title: "Scan",
-                  body: "Opens Instagram in a real Chromium browser. You log in manually — Ad Diet never touches your credentials. The feed scrolls at human pace with randomised delays.",
-                },
-                {
-                  n: "02", title: "Detect",
-                  body: <>Every <code className="ld-code">article</code> element is checked for the &ldquo;Ad&rdquo; label in visible DOM text. Matches are deduped by a SHA-256 hash of handle&nbsp;+&nbsp;content.</>,
-                },
-                {
-                  n: "03", title: "Inspect",
-                  body: "Advertiser handle, CTA text, raw copy, all links, and a screenshot per ad — saved as structured JSON. View everything in the dashboard alongside organic posts.",
-                },
-              ].map(({ n, title, body }) => (
-                <div key={n} className="ld-step">
-                  <div className="ld-step-n">{n}</div>
-                  <h3 className="ld-step-title">{title}</h3>
-                  <p className="ld-step-body">{body}</p>
-                </div>
-              ))}
-            </div>
+      <main style={styles.main}>
+        <section style={styles.card}>
+          <h2 style={styles.h2}>Run a new scan</h2>
+          <div style={styles.controls}>
+            <label style={styles.label}>
+              Max scrolls
+              <input type="number" min={1} max={100} value={maxScrolls}
+                onChange={(e) => setMaxScrolls(Number(e.target.value))} style={styles.input} />
+            </label>
+            <label style={styles.label}>
+              Max ads
+              <input type="number" min={1} max={100} value={maxAds}
+                onChange={(e) => setMaxAds(Number(e.target.value))} style={styles.input} />
+            </label>
+            <label style={styles.label}>
+              Headless
+              <select value={headless ? "true" : "false"}
+                onChange={(e) => setHeadless(e.target.value === "true")} style={styles.input}>
+                <option value="false">No (show browser)</option>
+                <option value="true">Yes</option>
+              </select>
+            </label>
           </div>
+          <div style={{ marginTop: 16, display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
+            <button onClick={handleScan} disabled={scanning}
+              style={scanning ? styles.buttonDisabled : styles.button}>
+              {scanning ? "Scanning... (browser will open)" : "Run Instagram scan"}
+            </button>
+            <button onClick={loadScans} style={styles.buttonSecondary}>Refresh scans</button>
+          </div>
+          {scanning && (
+            <p style={styles.hint}>
+              A browser window has opened. Log in if prompted, then press Enter in the terminal where you started the app.
+            </p>
+          )}
+          {scanError && (
+            <div style={styles.error}>
+              <strong>Error:</strong> {scanError}
+              <br />
+              <small>Tip: if the API times out, run <code>npm run scan:instagram</code> in the terminal, then click "Refresh scans".</small>
+            </div>
+          )}
         </section>
 
-        {/* ── WHY IT MATTERS ───────────────────────────────────── */}
-        <section className="ld-why">
-          <div className="ld-wrap ld-why-grid">
-            <div className="ld-why-left">
-              <div className="ld-eyebrow">Why it matters</div>
-              <blockquote className="ld-blockquote">
-                &ldquo;The feed is a black box. You never know what percentage of
-                what you see is paid content — or who paid for it.&rdquo;
-              </blockquote>
-            </div>
-            <div className="ld-stats">
-              {[
-                { num: "$50B+", label: "annual Meta ad revenue harvested from user attention" },
-                { num: "2B+",   label: "Instagram users shown ads with zero visibility into targeting" },
-                { num: "0",     label: "consumer tools that show you exactly what you're being sold" },
-              ].map(({ num, label }) => (
-                <div key={num} className="ld-stat">
-                  <div className="ld-stat-num">{num}</div>
-                  <div className="ld-stat-label">{label}</div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
+        <div style={styles.twoCol}>
+          <section style={{ ...styles.card, minWidth: 280 }}>
+            <h2 style={styles.h2}>Previous scans ({scans.length})</h2>
+            {scans.length === 0 && <p style={styles.muted}>No scans yet. Run a scan above.</p>}
+            <table style={styles.table}>
+              <thead>
+                <tr>
+                  <th style={styles.th}>Scan ID</th>
+                  <th style={styles.th}>Date</th>
+                  <th style={styles.th}>Ads</th>
+                  <th style={styles.th}></th>
+                </tr>
+              </thead>
+              <tbody>
+                {scans.map((s) => (
+                  <tr key={s.scanId} style={selectedScan?.scanId === s.scanId ? styles.trSelected : styles.tr}>
+                    <td style={styles.td}><code style={{ fontSize: 11 }}>{s.scanId.slice(0, 20)}</code></td>
+                    <td style={styles.td}>{new Date(s.startedAt).toLocaleString()}</td>
+                    <td style={styles.td}>{s.detectedAds.length}</td>
+                    <td style={styles.td}>
+                      <button onClick={() => handleSelectScan(s.scanId)} style={styles.linkBtn}>Open</button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </section>
 
-        {/* ── ETHICS ───────────────────────────────────────────── */}
-        <section className="ld-section ld-section-border-top">
-          <div className="ld-wrap">
-            <div className="ld-ethics">
-              <div className="ld-ethics-shield">🛡</div>
-              <div>
-                <h3 className="ld-ethics-title">Built for transparency, not manipulation.</h3>
-                <p className="ld-ethics-body">
-                  Ad Diet never clicks paid ads, never automates login, and never bypasses platform access controls.
-                  It reads only what you can already see — extracting visible text and links from the DOM,
-                  as any user would. Your session data stays entirely on your machine.
-                </p>
+          {selectedScan && (
+            <section style={{ ...styles.card, flex: 1 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 8 }}>
+                <h2 style={styles.h2}>{selectedScan.scanId} &mdash; {selectedScan.detectedAds.length} ads detected</h2>
+                <button onClick={() => setShowLogs((v) => !v)} style={styles.buttonSecondary}>
+                  {showLogs ? "Hide logs" : "Show scan logs"}
+                </button>
               </div>
-            </div>
-          </div>
-        </section>
+              <p style={{ ...styles.muted, marginBottom: 12 }}>
+                {new Date(selectedScan.startedAt).toLocaleString()} — {new Date(selectedScan.finishedAt).toLocaleString()}
+                {" | "}Scrolls: {selectedScan.requestedScrolls}
+              </p>
+              {showLogs && (
+                <div style={styles.logBox}>
+                  {selectedScan.logs.map((l, i) => (
+                    <div key={i} style={{ color: l.level === "error" ? "#c0392b" : l.level === "warn" ? "#e67e22" : "#2c3e50" }}>
+                      <span style={{ opacity: 0.6, fontSize: 11 }}>{l.timestamp.slice(11, 19)}</span>{" "}
+                      <span style={{ fontWeight: 600 }}>[{l.level.toUpperCase()}]</span> {l.message}
+                    </div>
+                  ))}
+                </div>
+              )}
+              <h3 style={{ ...styles.h2, fontSize: 15, marginBottom: 8 }}>Ads ({selectedScan.detectedAds.length})</h3>
+              {selectedScan.detectedAds.length === 0 ? (
+                <p style={styles.muted}>No sponsored posts detected in this scan.</p>
+              ) : (
+                <AdTable ads={selectedScan.detectedAds} expandedAds={expandedAds} onToggle={toggleExpand} />
+              )}
+              {(selectedScan.organicPosts ?? []).length > 0 && (
+                <>
+                  <h3 style={{ ...styles.h2, fontSize: 15, marginTop: 28, marginBottom: 8 }}>
+                    Organic posts ({selectedScan.organicPosts.length})
+                  </h3>
+                  <OrganicGrid posts={selectedScan.organicPosts} />
+                </>
+              )}
+            </section>
+          )}
+        </div>
+      </main>
 
-        {/* ── CTA ──────────────────────────────────────────────── */}
-        <section className="ld-cta">
-          <div className="ld-wrap ld-cta-inner">
-            <h2 className="ld-cta-h2">Know exactly what you&rsquo;re being sold.</h2>
-            <p className="ld-cta-sub">Run your first Instagram scan in under two minutes.</p>
-            <Link href="/dashboard" className="ld-btn-accent ld-btn-lg">Open Scanner →</Link>
-          </div>
-        </section>
-
-        {/* ── FOOTER ───────────────────────────────────────────── */}
-        <footer className="ld-footer">
-          <div className="ld-wrap ld-footer-inner">
-            <span className="ld-logo ld-logo-sm">AD DIET</span>
-            <span className="ld-footer-tag">Feed intelligence for everyone.</span>
-            <div className="ld-footer-links">
-              <Link href="/dashboard" className="ld-footer-link">Dashboard</Link>
-              <a href="https://github.com/alexeyqu/ad-steering" target="_blank" rel="noreferrer" className="ld-footer-link">GitHub</a>
-            </div>
-          </div>
-        </footer>
-
-      </div>
-    </>
+      <footer style={styles.footer}>
+        <p>
+          This tool is for inspecting the ads shown to the logged-in user.
+          It does not click paid ads. It does not automate login. It does not bypass platform access controls.
+          It extracts visible text and links from the page DOM where available.
+        </p>
+      </footer>
+    </div>
   );
 }
 
-/* ─────────────────────────────────────────────────────────────────────────── */
-const CSS = `
-@import url('https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Plus+Jakarta+Sans:wght@300;400;500;600&display=swap');
-
-:root {
-  --bg:      #07070C;
-  --surf:    #0D0D18;
-  --surf2:   #131320;
-  --bdr:     rgba(255,255,255,0.065);
-  --bdr2:    rgba(255,255,255,0.12);
-  --lime:    #CAFF33;
-  --lime-d:  rgba(202,255,51,0.10);
-  --lime-gl: rgba(202,255,51,0.22);
-  --txt:     #EDEAE2;
-  --muted:   #68657A;
-  --muted2:  #3E3D50;
-  --red:     #FF3352;
-  --red-d:   rgba(255,51,82,0.10);
+function OrganicGrid({ posts }: { posts: InstagramOrganicPost[] }) {
+  return (
+    <div style={{ display: "flex", flexWrap: "wrap", gap: 12 }}>
+      {posts.map((post) => (
+        <div key={post.id} style={styles.organicCard}>
+          {post.screenshotPath ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={post.screenshotPath} alt="organic post"
+              style={{ width: "100%", display: "block", borderRadius: "4px 4px 0 0", cursor: "pointer" }}
+              onClick={() => window.open(post.screenshotPath, "_blank")} />
+          ) : (
+            <div style={{ height: 80, background: "#eee", borderRadius: "4px 4px 0 0", display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <span style={styles.muted}>no screenshot</span>
+            </div>
+          )}
+          <div style={{ padding: "6px 8px", fontSize: 12 }}>
+            {post.authorHandle ? (
+              <a href={`https://www.instagram.com/${post.authorHandle}/`} target="_blank" rel="noreferrer">
+                @{post.authorHandle}
+              </a>
+            ) : <span style={styles.muted}>unknown</span>}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
 }
 
-/* ── BASE ── */
-.ld,
-.ld * { box-sizing: border-box; margin: 0; padding: 0; }
-
-.ld {
-  background: var(--bg);
-  color: var(--txt);
-  font-family: 'Plus Jakarta Sans', sans-serif;
-  font-size: 16px;
-  line-height: 1.6;
-  min-height: 100vh;
-  overflow-x: hidden;
+function AdTable({ ads, expandedAds, onToggle }: {
+  ads: InstagramAdCandidate[];
+  expandedAds: Set<string>;
+  onToggle: (id: string) => void;
+}) {
+  return (
+    <div style={{ overflowX: "auto" }}>
+      <table style={styles.table}>
+        <thead>
+          <tr>
+            <th style={styles.th}>Screenshot</th>
+            <th style={styles.th}>Advertiser</th>
+            <th style={styles.th}>CTA</th>
+            <th style={styles.th}>Raw text preview</th>
+            <th style={styles.th}>Links</th>
+            <th style={styles.th}>Post URLs</th>
+            <th style={styles.th}>Warnings</th>
+            <th style={styles.th}></th>
+          </tr>
+        </thead>
+        <tbody>
+          {ads.map((ad) => (
+            <>
+              <tr key={ad.id} style={styles.tr}>
+                <td style={styles.td}>
+                  {ad.screenshotPath ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={ad.screenshotPath} alt="ad screenshot"
+                      style={{ width: 80, height: 80, objectFit: "cover", borderRadius: 4, cursor: "pointer" }}
+                      onClick={() => window.open(ad.screenshotPath, "_blank")} />
+                  ) : <span style={styles.muted}>—</span>}
+                </td>
+                <td style={styles.td}>
+                  {ad.advertiserHandle ? (
+                    <a href={`https://www.instagram.com/${ad.advertiserHandle}/`} target="_blank" rel="noreferrer">
+                      @{ad.advertiserHandle}
+                    </a>
+                  ) : <span style={styles.muted}>unknown</span>}
+                </td>
+                <td style={styles.td}>{ad.ctaText ?? <span style={styles.muted}>—</span>}</td>
+                <td style={styles.td}>
+                  <span style={{ fontSize: 12 }}>{ad.rawText.slice(0, 120)}{ad.rawText.length > 120 ? "…" : ""}</span>
+                </td>
+                <td style={styles.td}>{ad.links.length}</td>
+                <td style={styles.td}>{ad.postUrls.length}</td>
+                <td style={styles.td}>
+                  {ad.extractionWarnings.length > 0 ? (
+                    <span style={{ color: "#e67e22", fontSize: 12 }}>{ad.extractionWarnings.length}</span>
+                  ) : <span style={styles.muted}>—</span>}
+                </td>
+                <td style={styles.td}>
+                  <button onClick={() => onToggle(ad.id)} style={styles.linkBtn}>
+                    {expandedAds.has(ad.id) ? "Collapse" : "Expand"}
+                  </button>
+                </td>
+              </tr>
+              {expandedAds.has(ad.id) && (
+                <tr key={`${ad.id}-exp`} style={{ background: "#f0f4ff" }}>
+                  <td colSpan={8} style={{ ...styles.td, padding: 16 }}>
+                    <AdExpanded ad={ad} />
+                  </td>
+                </tr>
+              )}
+            </>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
 }
 
-.ld-wrap {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding-inline: clamp(20px, 5vw, 72px);
+function AdExpanded({ ad }: { ad: InstagramAdCandidate }) {
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+      <div><strong>Detected at:</strong> {ad.detectedAt}</div>
+      <div><strong>Sponsored label found:</strong> {ad.sponsoredLabelFound ? "Yes" : "No"}</div>
+      {ad.advertiserHandle && <div><strong>Advertiser handle:</strong> @{ad.advertiserHandle}</div>}
+      <div>
+        <strong>Full raw text:</strong>
+        <pre style={styles.pre}>{ad.rawText}</pre>
+      </div>
+      {ad.links.length > 0 && (
+        <div>
+          <strong>All links ({ad.links.length}):</strong>
+          <ul style={{ marginTop: 4, paddingLeft: 20, fontSize: 12 }}>
+            {ad.links.map((l, i) => (
+              <li key={i}>
+                <a href={l.startsWith("http") ? l : `https://www.instagram.com${l}`} target="_blank" rel="noreferrer">{l}</a>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+      {ad.postUrls.length > 0 && (
+        <div>
+          <strong>Post URLs ({ad.postUrls.length}):</strong>
+          <ul style={{ marginTop: 4, paddingLeft: 20, fontSize: 12 }}>
+            {ad.postUrls.map((l, i) => (
+              <li key={i}>
+                <a href={l.startsWith("http") ? l : `https://www.instagram.com${l}`} target="_blank" rel="noreferrer">{l}</a>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+      {ad.extractionWarnings.length > 0 && (
+        <div>
+          <strong>Extraction warnings:</strong>
+          <ul style={{ marginTop: 4, paddingLeft: 20, fontSize: 12, color: "#c0392b" }}>
+            {ad.extractionWarnings.map((w, i) => <li key={i}>{w}</li>)}
+          </ul>
+        </div>
+      )}
+      {ad.screenshotPath && (
+        <div>
+          <strong>Full screenshot:</strong><br />
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={ad.screenshotPath} alt="full ad screenshot"
+            style={{ maxWidth: "100%", marginTop: 8, borderRadius: 4, border: "1px solid #ddd" }} />
+        </div>
+      )}
+    </div>
+  );
 }
 
-/* subtle dot-grid background */
-.ld::before {
-  content: '';
-  position: fixed;
-  inset: 0;
-  background-image: radial-gradient(rgba(255,255,255,0.028) 1px, transparent 1px);
-  background-size: 36px 36px;
-  pointer-events: none;
-  z-index: 0;
-}
-.ld > * { position: relative; z-index: 1; }
-
-/* ── NAV ── */
-.ld-nav {
-  position: sticky; top: 0; z-index: 100;
-  background: rgba(7,7,12,0.80);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border-bottom: 1px solid var(--bdr);
-}
-.ld-nav-inner {
-  height: 58px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-.ld-logo {
-  font-family: 'Syne', sans-serif;
-  font-weight: 800;
-  font-size: 17px;
-  letter-spacing: 0.18em;
-  color: var(--lime);
-  text-decoration: none;
-  user-select: none;
-}
-.ld-logo-sm { font-size: 13px; }
-.ld-nav-right { display: flex; align-items: center; gap: 28px; }
-.ld-nav-link {
-  font-size: 13px; font-weight: 500;
-  color: var(--muted); text-decoration: none;
-  transition: color .18s;
-}
-.ld-nav-link:hover { color: var(--txt); }
-.ld-pill-cta {
-  font-family: 'Syne', sans-serif;
-  font-weight: 700; font-size: 12px;
-  letter-spacing: 0.06em;
-  color: var(--bg);
-  background: var(--lime);
-  text-decoration: none;
-  padding: 7px 16px;
-  border-radius: 4px;
-  transition: opacity .18s, transform .14s;
-}
-.ld-pill-cta:hover { opacity: .85; transform: translateY(-1px); }
-
-/* ── HERO ── */
-.ld-hero {
-  padding-block: clamp(88px, 13vw, 148px);
-}
-.ld-hero-grid {
-  display: grid;
-  grid-template-columns: 56fr 44fr;
-  gap: 56px;
-  align-items: center;
-}
-@media (max-width: 880px) {
-  .ld-hero-grid { grid-template-columns: 1fr; gap: 52px; }
-}
-
-.ld-eyebrow {
-  font-family: 'Space Mono', monospace;
-  font-size: 10px; font-weight: 700;
-  letter-spacing: 0.22em; text-transform: uppercase;
-  color: var(--lime);
-  margin-bottom: 18px;
-}
-.ld-h1 {
-  font-family: 'Syne', sans-serif;
-  font-weight: 800;
-  font-size: clamp(50px, 6.8vw, 82px);
-  line-height: 1.0;
-  letter-spacing: -0.025em;
-  color: var(--txt);
-  margin-bottom: 22px;
-}
-.ld-h1 em {
-  font-style: italic;
-  color: var(--lime);
-}
-.ld-lead {
-  font-size: clamp(15px, 1.7vw, 18px);
-  font-weight: 300;
-  color: var(--muted);
-  line-height: 1.75;
-  max-width: 500px;
-  margin-bottom: 36px;
-}
-.ld-ctas { display: flex; gap: 14px; flex-wrap: wrap; align-items: center; }
-
-/* ── BUTTONS ── */
-.ld-btn-accent {
-  font-family: 'Syne', sans-serif;
-  font-weight: 700; font-size: 14px;
-  letter-spacing: 0.04em;
-  color: var(--bg);
-  background: var(--lime);
-  text-decoration: none;
-  padding: 13px 26px;
-  border-radius: 4px;
-  display: inline-block;
-  transition: opacity .18s, transform .14s, box-shadow .2s;
-}
-.ld-btn-accent:hover {
-  opacity: .88;
-  transform: translateY(-2px);
-  box-shadow: 0 8px 32px var(--lime-gl);
-}
-.ld-btn-lg { font-size: 16px; padding: 15px 34px; }
-.ld-btn-ghost {
-  font-size: 13px; font-weight: 500;
-  color: var(--muted);
-  text-decoration: none;
-  padding: 13px 18px;
-  border: 1px solid var(--bdr);
-  border-radius: 4px;
-  display: inline-block;
-  transition: color .18s, border-color .18s;
-}
-.ld-btn-ghost:hover { color: var(--txt); border-color: var(--muted2); }
-
-/* ── TERMINAL ── */
-.ld-term {
-  background: #080810;
-  border: 1px solid var(--bdr);
-  border-radius: 10px;
-  overflow: hidden;
-  box-shadow:
-    0 30px 80px rgba(0,0,0,0.65),
-    0 0 0 1px rgba(202,255,51,0.05),
-    inset 0 1px 0 rgba(255,255,255,0.04);
-}
-.ld-term-bar {
-  background: var(--surf);
-  padding: 11px 14px;
-  display: flex; align-items: center; gap: 6px;
-  border-bottom: 1px solid var(--bdr);
-}
-.ld-dot { width: 11px; height: 11px; border-radius: 50%; }
-.ld-dot-r { background: #FF5F57; }
-.ld-dot-y { background: #FFBD2E; }
-.ld-dot-g { background: #28C840; }
-.ld-term-title {
-  font-family: 'Space Mono', monospace;
-  font-size: 11px; color: var(--muted);
-  margin-left: 8px;
-}
-.ld-term-body {
-  padding: 18px 20px;
-  min-height: 250px;
-  font-family: 'Space Mono', monospace;
-  font-size: 12px; line-height: 1.65;
-  display: flex; flex-direction: column; gap: 3px;
-}
-
-@keyframes ld-in {
-  from { opacity: 0; transform: translateY(5px); }
-  to   { opacity: 1; transform: translateY(0); }
-}
-.ld-tline { animation: ld-in .25s ease-out both; }
-.ld-tline-cmd   { color: var(--lime); }
-.ld-tline-muted { color: var(--muted); }
-.ld-tline-done  { color: var(--lime); font-weight: 700; letter-spacing: 0.02em; }
-.ld-tline-ad {
-  display: flex; align-items: center; flex-wrap: wrap; gap: 8px;
-  padding: 6px 10px;
-  margin-block: 2px;
-  background: var(--red-d);
-  border-left: 2px solid var(--red);
-  border-radius: 0 4px 4px 0;
-}
-.ld-ad-badge {
-  font-size: 9px; font-weight: 700;
-  letter-spacing: 0.12em; text-transform: uppercase;
-  color: var(--red);
-  background: rgba(255,51,82,0.18);
-  padding: 2px 6px; border-radius: 3px;
-}
-.ld-t-handle { color: var(--txt); font-size: 12px; }
-.ld-t-cta {
-  font-size: 10px; color: var(--muted);
-  background: var(--surf2);
-  padding: 2px 7px; border-radius: 10px;
-  border: 1px solid var(--bdr);
-}
-.ld-t-preview { color: var(--muted); font-size: 11px; flex: 1; }
-
-@keyframes ld-blink { 50% { opacity: 0; } }
-.ld-cursor {
-  color: var(--lime);
-  font-size: 14px;
-  animation: ld-blink 1s step-end infinite;
-  margin-top: 2px;
-  display: inline-block;
-}
-
-/* ── TRUST ── */
-.ld-trust-wrap {
-  border-top: 1px solid var(--bdr);
-  border-bottom: 1px solid var(--bdr);
-  background: var(--surf);
-}
-.ld-trust {
-  display: flex; flex-wrap: wrap; gap: 10px;
-  padding-block: 22px;
-}
-.ld-trust-pill {
-  font-family: 'Space Mono', monospace;
-  font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase;
-  color: var(--muted);
-  border: 1px solid var(--bdr);
-  padding: 5px 13px; border-radius: 100px;
-  background: var(--bg);
-  transition: color .18s, border-color .18s;
-  cursor: default;
-}
-.ld-trust-pill:hover { color: var(--txt); border-color: var(--muted2); }
-
-/* ── SECTIONS ── */
-.ld-section { padding-block: clamp(72px, 10vw, 120px); }
-.ld-section-border-top { border-top: 1px solid var(--bdr); }
-.ld-section-hd { margin-bottom: 60px; }
-.ld-h2 {
-  font-family: 'Syne', sans-serif;
-  font-weight: 800;
-  font-size: clamp(34px, 4vw, 52px);
-  line-height: 1.06;
-  letter-spacing: -0.02em;
-  color: var(--txt);
-  margin-top: 14px;
-}
-
-/* ── STEPS ── */
-.ld-steps {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 0;
-}
-@media (max-width: 800px) {
-  .ld-steps { grid-template-columns: 1fr; }
-  .ld-step { border-left: none !important; border-top: 1px solid var(--bdr); padding-top: 32px !important; }
-  .ld-step:first-child { border-top: none; padding-top: 0 !important; }
-}
-.ld-step {
-  padding: 0 40px 0 0;
-  border-right: 1px solid var(--bdr);
-  margin-right: 40px;
-}
-.ld-step:last-child { border-right: none; margin-right: 0; padding-right: 0; }
-.ld-step-n {
-  font-family: 'Syne', sans-serif;
-  font-weight: 800;
-  font-size: 72px;
-  line-height: 1;
-  color: var(--bdr2);
-  letter-spacing: -0.04em;
-  margin-bottom: -10px;
-  user-select: none;
-}
-.ld-step-title {
-  font-family: 'Syne', sans-serif;
-  font-weight: 700; font-size: 20px;
-  color: var(--txt); margin-bottom: 12px;
-}
-.ld-step-body {
-  font-size: 14px; font-weight: 300;
-  color: var(--muted); line-height: 1.75;
-}
-.ld-code {
-  font-family: 'Space Mono', monospace; font-size: 11px;
-  color: var(--lime); background: var(--lime-d);
-  padding: 1px 5px; border-radius: 3px;
-}
-
-/* ── WHY ── */
-.ld-why {
-  background: var(--surf);
-  border-top: 1px solid var(--bdr);
-  border-bottom: 1px solid var(--bdr);
-  padding-block: clamp(72px, 10vw, 120px);
-}
-.ld-why-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 80px; align-items: center;
-}
-@media (max-width: 800px) {
-  .ld-why-grid { grid-template-columns: 1fr; gap: 52px; }
-}
-.ld-blockquote {
-  font-family: 'Syne', sans-serif;
-  font-weight: 700;
-  font-size: clamp(20px, 2.6vw, 28px);
-  line-height: 1.45;
-  letter-spacing: -0.01em;
-  color: var(--txt);
-  border-left: 3px solid var(--lime);
-  padding-left: 22px;
-  font-style: italic;
-}
-.ld-stats { display: flex; flex-direction: column; gap: 28px; }
-.ld-stat-num {
-  font-family: 'Syne', sans-serif;
-  font-weight: 800; font-size: 44px;
-  color: var(--lime); line-height: 1;
-  margin-bottom: 4px;
-}
-.ld-stat-label {
-  font-size: 13px; font-weight: 400;
-  color: var(--muted); line-height: 1.55;
-  max-width: 280px;
-}
-
-/* ── ETHICS ── */
-.ld-ethics {
-  display: flex; gap: 26px; align-items: flex-start;
-  background: var(--surf);
-  border: 1px solid var(--bdr);
-  border-radius: 8px;
-  padding: 30px 34px;
-}
-.ld-ethics-shield { font-size: 26px; flex-shrink: 0; margin-top: 2px; }
-.ld-ethics-title {
-  font-family: 'Syne', sans-serif;
-  font-weight: 700; font-size: 18px;
-  color: var(--txt); margin-bottom: 8px;
-}
-.ld-ethics-body {
-  font-size: 14px; font-weight: 300;
-  color: var(--muted); line-height: 1.75;
-}
-
-/* ── CTA ── */
-.ld-cta {
-  padding-block: clamp(80px, 12vw, 140px);
-  border-top: 1px solid var(--bdr);
-}
-.ld-cta-inner { text-align: center; max-width: 560px; margin: 0 auto; }
-.ld-cta-h2 {
-  font-family: 'Syne', sans-serif;
-  font-weight: 800;
-  font-size: clamp(34px, 5vw, 56px);
-  line-height: 1.06; letter-spacing: -0.025em;
-  color: var(--txt); margin-bottom: 14px;
-}
-.ld-cta-sub {
-  font-size: 16px; font-weight: 300;
-  color: var(--muted); margin-bottom: 32px;
-}
-
-/* ── FOOTER ── */
-.ld-footer {
-  border-top: 1px solid var(--bdr);
-  padding-block: 26px;
-}
-.ld-footer-inner {
-  display: flex; align-items: center; gap: 20px; flex-wrap: wrap;
-}
-.ld-footer-tag { font-size: 12px; color: var(--muted); flex: 1; }
-.ld-footer-links { display: flex; gap: 20px; }
-.ld-footer-link {
-  font-size: 12px; color: var(--muted);
-  text-decoration: none; transition: color .18s;
-}
-.ld-footer-link:hover { color: var(--txt); }
-
-/* ── ANIMATIONS on load ── */
-@keyframes ld-hero-up {
-  from { opacity: 0; transform: translateY(28px); }
-  to   { opacity: 1; transform: translateY(0); }
-}
-.ld-hero-copy > * {
-  animation: ld-hero-up .6s cubic-bezier(.22,.68,0,1.2) both;
-}
-.ld-hero-copy > *:nth-child(1) { animation-delay: .05s; }
-.ld-hero-copy > *:nth-child(2) { animation-delay: .14s; }
-.ld-hero-copy > *:nth-child(3) { animation-delay: .22s; }
-.ld-hero-copy > *:nth-child(4) { animation-delay: .30s; }
-.ld-hero-terminal {
-  animation: ld-hero-up .7s cubic-bezier(.22,.68,0,1.2) .18s both;
-}
-`;
+const styles = {
+  header: { background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)", color: "white", padding: "32px 24px" },
+  headerInner: { maxWidth: 1100, margin: "0 auto" },
+  h1: { fontSize: 24, fontWeight: 700, marginBottom: 6 },
+  h2: { fontSize: 18, fontWeight: 600, marginBottom: 12 },
+  subtitle: { opacity: 0.85, fontSize: 14 },
+  main: { maxWidth: 1100, margin: "0 auto", padding: "24px 16px", flex: 1 },
+  twoCol: { display: "flex", gap: 20, flexWrap: "wrap" as const, marginTop: 20 },
+  card: { background: "white", borderRadius: 8, padding: 20, boxShadow: "0 1px 4px rgba(0,0,0,0.08)" },
+  controls: { display: "flex", gap: 20, flexWrap: "wrap" as const, marginTop: 8 },
+  label: { display: "flex", flexDirection: "column" as const, gap: 4, fontSize: 14, fontWeight: 500 },
+  input: { marginTop: 2, padding: "6px 10px", borderRadius: 4, border: "1px solid #ccc", fontSize: 14, width: 150 },
+  button: { background: "#667eea", color: "white", border: "none", borderRadius: 6, padding: "10px 22px", fontSize: 15, fontWeight: 600, cursor: "pointer" },
+  buttonDisabled: { background: "#aaa", color: "white", border: "none", borderRadius: 6, padding: "10px 22px", fontSize: 15, fontWeight: 600, cursor: "not-allowed" },
+  buttonSecondary: { background: "white", color: "#667eea", border: "1px solid #667eea", borderRadius: 6, padding: "8px 16px", fontSize: 14, cursor: "pointer" },
+  linkBtn: { background: "none", border: "none", color: "#0066cc", cursor: "pointer", fontSize: 13, padding: "2px 6px", borderRadius: 4 },
+  hint: { marginTop: 12, fontSize: 13, color: "#555", fontStyle: "italic" },
+  error: { marginTop: 12, background: "#fdf0ef", border: "1px solid #e74c3c", borderRadius: 4, padding: 12, fontSize: 13, color: "#c0392b" },
+  muted: { color: "#888", fontSize: 13 },
+  organicCard: { width: 160, border: "1px solid #e0e0e0", borderRadius: 6, overflow: "hidden" as const, background: "white", boxShadow: "0 1px 3px rgba(0,0,0,0.06)" },
+  table: { width: "100%", borderCollapse: "collapse" as const, fontSize: 13 },
+  th: { textAlign: "left" as const, padding: "8px 10px", background: "#f4f5f7", borderBottom: "2px solid #e0e0e0", fontWeight: 600, whiteSpace: "nowrap" as const },
+  td: { padding: "8px 10px", borderBottom: "1px solid #eee", verticalAlign: "top" as const },
+  tr: { cursor: "default" },
+  trSelected: { background: "#eef2ff", cursor: "default" },
+  pre: { background: "#f8f9fa", border: "1px solid #e0e0e0", borderRadius: 4, padding: 10, fontSize: 12, whiteSpace: "pre-wrap" as const, wordBreak: "break-word" as const, maxHeight: 300, overflowY: "auto" as const, marginTop: 4 },
+  logBox: { background: "#1a1a2e", color: "#e0e0e0", borderRadius: 6, padding: 12, fontSize: 12, fontFamily: "monospace", maxHeight: 300, overflowY: "auto" as const, marginBottom: 16, lineHeight: 1.7 },
+  footer: { background: "#f4f5f7", borderTop: "1px solid #e0e0e0", padding: "16px 24px", textAlign: "center" as const, fontSize: 12, color: "#666" },
+};
