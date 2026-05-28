@@ -1,0 +1,48 @@
+{
+  "id": "plan_40a7e5ef1fdc",
+  "goalId": "goal_c7e027dd7a2b",
+  "createdAt": "2026-05-28T19:47:46.254Z",
+  "actions": [
+    {
+      "id": "act_1",
+      "type": "browse_results",
+      "url": "https://www.instagram.com/explore/search/keyword/?q=electric%20kettles",
+      "reason": "Browse Instagram explore results for \"electric kettles\" without clicking sponsored posts.",
+      "safetyNote": "Organic browse only; no paid ad clicks."
+    },
+    {
+      "id": "act_2",
+      "type": "wait",
+      "durationMs": 5000,
+      "reason": "Pause so activity looks organic before the next step.",
+      "safetyNote": "No clicks during wait."
+    },
+    {
+      "id": "act_3",
+      "type": "visit_url",
+      "url": "https://www.instagram.com/explore/tags/electrickettles/",
+      "reason": "Browse the #electrickettles hashtag feed on Instagram.",
+      "safetyNote": "Scroll only; do not click sponsored posts."
+    },
+    {
+      "id": "act_4",
+      "type": "wait",
+      "durationMs": 5000,
+      "reason": "Pause so activity looks organic before the next step.",
+      "safetyNote": "No clicks during wait."
+    },
+    {
+      "id": "act_5",
+      "type": "ad_preferences",
+      "url": "https://www.instagram.com/accounts/ad_preferences/",
+      "reason": "Open Instagram ad preferences so you can optionally adjust interests manually.",
+      "safetyNote": "Manual changes only — the agent will not automate sensitive settings."
+    }
+  ],
+  "caveats": [
+    "Platform response is not guaranteed.",
+    "The agent will not click paid ads or sponsored posts.",
+    "Results may be noisy in a short hackathon demo.",
+    "Steering stays on Instagram only (explore search, hashtags, ad preferences)."
+  ]
+}

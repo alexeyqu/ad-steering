@@ -7,7 +7,10 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "scan:instagram": "ts-node --project tsconfig.scanner.json src/scripts/scan.ts"
+    "scan:instagram": "ts-node --project tsconfig.scanner.json src/scripts/scan.ts",
+    "create:goal": "ts-node --project tsconfig.scanner.json src/scripts/createGoal.ts",
+    "create:plan": "ts-node --project tsconfig.scanner.json src/scripts/createPlan.ts",
+    "run:plan": "ts-node --project tsconfig.scanner.json src/scripts/runSteeringPlan.ts"
   },
   "dependencies": {
     "next": "14.2.29",

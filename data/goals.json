@@ -1,0 +1,40 @@
+[
+  {
+    "id": "goal_fd6bbc21a74d",
+    "createdAt": "2026-05-28T19:42:41.850Z",
+    "updatedAt": "2026-05-28T19:42:41.850Z",
+    "rawPositivePrompt": "electric kettles, tea, kitchen appliances",
+    "rawNegativePrompt": "crypto, gambling",
+    "positiveIntents": [
+      "electric kettles",
+      "tea",
+      "kitchen appliances"
+    ],
+    "negativeIntents": [
+      "crypto",
+      "gambling"
+    ],
+    "timeWindowDays": 7,
+    "targetPlatforms": [
+      "instagram",
+      "google"
+    ],
+    "status": "draft"
+  },
+  {
+    "id": "goal_c7e027dd7a2b",
+    "createdAt": "2026-05-28T19:43:41.987Z",
+    "updatedAt": "2026-05-28T19:49:19.409Z",
+    "rawPositivePrompt": "electric kettles",
+    "rawNegativePrompt": "",
+    "positiveIntents": [
+      "electric kettles"
+    ],
+    "negativeIntents": [],
+    "timeWindowDays": 7,
+    "targetPlatforms": [
+      "instagram"
+    ],
+    "status": "plan_run"
+  }
+]

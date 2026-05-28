@@ -1,0 +1,243 @@
+[
+  {
+    "timestamp": "2026-05-28T19:43:57.818Z",
+    "goalId": "goal_c7e027dd7a2b",
+    "planId": "plan_b379a795b2ca",
+    "status": "started",
+    "message": "Starting steering plan plan_b379a795b2ca with 6 action(s)."
+  },
+  {
+    "timestamp": "2026-05-28T19:43:58.728Z",
+    "goalId": "goal_c7e027dd7a2b",
+    "planId": "plan_b379a795b2ca",
+    "actionId": "act_1",
+    "status": "started",
+    "message": "Running search action: best electric kettles UK"
+  },
+  {
+    "timestamp": "2026-05-28T19:44:01.195Z",
+    "goalId": "goal_c7e027dd7a2b",
+    "planId": "plan_b379a795b2ca",
+    "actionId": "act_1",
+    "status": "success",
+    "message": "Searched Google for 'best electric kettles UK' and saved screenshot. No organic results clicked (sponsored results were avoided).",
+    "screenshotPath": "/screenshots/goal_c7e027dd7a2b/action-act_1.png"
+  },
+  {
+    "timestamp": "2026-05-28T19:44:02.567Z",
+    "goalId": "goal_c7e027dd7a2b",
+    "planId": "plan_b379a795b2ca",
+    "actionId": "act_2",
+    "status": "started",
+    "message": "Running search action: electric kettles reviews"
+  },
+  {
+    "timestamp": "2026-05-28T19:44:04.968Z",
+    "goalId": "goal_c7e027dd7a2b",
+    "planId": "plan_b379a795b2ca",
+    "actionId": "act_2",
+    "status": "success",
+    "message": "Searched Google for 'electric kettles reviews' and saved screenshot. No organic results clicked (sponsored results were avoided).",
+    "screenshotPath": "/screenshots/goal_c7e027dd7a2b/action-act_2.png"
+  },
+  {
+    "timestamp": "2026-05-28T19:44:06.354Z",
+    "goalId": "goal_c7e027dd7a2b",
+    "planId": "plan_b379a795b2ca",
+    "actionId": "act_3",
+    "status": "started",
+    "message": "Running search action: electric kettles deals UK"
+  },
+  {
+    "timestamp": "2026-05-28T19:44:08.803Z",
+    "goalId": "goal_c7e027dd7a2b",
+    "planId": "plan_b379a795b2ca",
+    "actionId": "act_3",
+    "status": "success",
+    "message": "Searched Google for 'electric kettles deals UK' and saved screenshot. No organic results clicked (sponsored results were avoided).",
+    "screenshotPath": "/screenshots/goal_c7e027dd7a2b/action-act_3.png"
+  },
+  {
+    "timestamp": "2026-05-28T19:44:10.118Z",
+    "goalId": "goal_c7e027dd7a2b",
+    "planId": "plan_b379a795b2ca",
+    "actionId": "act_4",
+    "status": "started",
+    "message": "Running search action: electric kettles comparison"
+  },
+  {
+    "timestamp": "2026-05-28T19:44:12.706Z",
+    "goalId": "goal_c7e027dd7a2b",
+    "planId": "plan_b379a795b2ca",
+    "actionId": "act_4",
+    "status": "success",
+    "message": "Searched Google for 'electric kettles comparison' and saved screenshot. No organic results clicked (sponsored results were avoided).",
+    "screenshotPath": "/screenshots/goal_c7e027dd7a2b/action-act_4.png"
+  },
+  {
+    "timestamp": "2026-05-28T19:44:13.756Z",
+    "goalId": "goal_c7e027dd7a2b",
+    "planId": "plan_b379a795b2ca",
+    "actionId": "act_5",
+    "status": "started",
+    "message": "Running visit_url action: https://www.argos.co.uk/browse/appliances/kettles/c:29644/"
+  },
+  {
+    "timestamp": "2026-05-28T19:44:21.578Z",
+    "goalId": "goal_c7e027dd7a2b",
+    "planId": "plan_b379a795b2ca",
+    "actionId": "act_5",
+    "status": "success",
+    "message": "Visited https://www.argos.co.uk/browse/appliances/kettles/c:29644/ and saved screenshot after light scrolling.",
+    "screenshotPath": "/screenshots/goal_c7e027dd7a2b/action-act_5.png"
+  },
+  {
+    "timestamp": "2026-05-28T19:44:22.909Z",
+    "goalId": "goal_c7e027dd7a2b",
+    "planId": "plan_b379a795b2ca",
+    "actionId": "act_6",
+    "status": "started",
+    "message": "Running visit_url action: https://www.currys.co.uk/appliances/small-kitchen-appliances/kettles"
+  },
+  {
+    "timestamp": "2026-05-28T19:44:27.151Z",
+    "goalId": "goal_c7e027dd7a2b",
+    "planId": "plan_b379a795b2ca",
+    "actionId": "act_6",
+    "status": "success",
+    "message": "Visited https://www.currys.co.uk/appliances/small-kitchen-appliances/kettles and saved screenshot after light scrolling.",
+    "screenshotPath": "/screenshots/goal_c7e027dd7a2b/action-act_6.png"
+  },
+  {
+    "timestamp": "2026-05-28T19:44:28.601Z",
+    "goalId": "goal_c7e027dd7a2b",
+    "planId": "plan_b379a795b2ca",
+    "status": "success",
+    "message": "Steering plan plan_b379a795b2ca finished."
+  },
+  {
+    "timestamp": "2026-05-28T19:47:59.185Z",
+    "goalId": "goal_c7e027dd7a2b",
+    "planId": "plan_40a7e5ef1fdc",
+    "status": "started",
+    "message": "Starting steering plan plan_40a7e5ef1fdc (5 actions, Instagram only)."
+  },
+  {
+    "timestamp": "2026-05-28T19:48:00.195Z",
+    "goalId": "goal_c7e027dd7a2b",
+    "planId": "plan_40a7e5ef1fdc",
+    "actionId": "act_1",
+    "status": "started",
+    "message": "Running browse_results: https://www.instagram.com/explore/search/keyword/?q=electric%20kettles"
+  },
+  {
+    "timestamp": "2026-05-28T19:48:10.448Z",
+    "goalId": "goal_c7e027dd7a2b",
+    "planId": "plan_40a7e5ef1fdc",
+    "actionId": "act_1",
+    "status": "success",
+    "message": "Browsed Instagram at https://www.instagram.com/explore/search/keyword/?q=electric%20kettles with slow scrolling (no sponsored clicks).",
+    "screenshotPath": "/screenshots/goal_c7e027dd7a2b/action-act_1.png"
+  },
+  {
+    "timestamp": "2026-05-28T19:48:20.037Z",
+    "goalId": "goal_c7e027dd7a2b",
+    "planId": "plan_40a7e5ef1fdc",
+    "status": "info",
+    "message": "Paused 9588ms before next action."
+  },
+  {
+    "timestamp": "2026-05-28T19:48:20.038Z",
+    "goalId": "goal_c7e027dd7a2b",
+    "planId": "plan_40a7e5ef1fdc",
+    "actionId": "act_2",
+    "status": "started",
+    "message": "Running wait: Pause so activity looks organic before the next step."
+  },
+  {
+    "timestamp": "2026-05-28T19:48:25.042Z",
+    "goalId": "goal_c7e027dd7a2b",
+    "planId": "plan_40a7e5ef1fdc",
+    "actionId": "act_2",
+    "status": "success",
+    "message": "Waited 5000ms (Pause so activity looks organic before the next step.)."
+  },
+  {
+    "timestamp": "2026-05-28T19:48:33.130Z",
+    "goalId": "goal_c7e027dd7a2b",
+    "planId": "plan_40a7e5ef1fdc",
+    "status": "info",
+    "message": "Paused 8086ms before next action."
+  },
+  {
+    "timestamp": "2026-05-28T19:48:33.130Z",
+    "goalId": "goal_c7e027dd7a2b",
+    "planId": "plan_40a7e5ef1fdc",
+    "actionId": "act_3",
+    "status": "started",
+    "message": "Running visit_url: https://www.instagram.com/explore/tags/electrickettles/"
+  },
+  {
+    "timestamp": "2026-05-28T19:48:41.731Z",
+    "goalId": "goal_c7e027dd7a2b",
+    "planId": "plan_40a7e5ef1fdc",
+    "actionId": "act_3",
+    "status": "success",
+    "message": "Browsed Instagram at https://www.instagram.com/explore/tags/electrickettles/ with slow scrolling (no sponsored clicks).",
+    "screenshotPath": "/screenshots/goal_c7e027dd7a2b/action-act_3.png"
+  },
+  {
+    "timestamp": "2026-05-28T19:48:53.889Z",
+    "goalId": "goal_c7e027dd7a2b",
+    "planId": "plan_40a7e5ef1fdc",
+    "status": "info",
+    "message": "Paused 12157ms before next action."
+  },
+  {
+    "timestamp": "2026-05-28T19:48:53.889Z",
+    "goalId": "goal_c7e027dd7a2b",
+    "planId": "plan_40a7e5ef1fdc",
+    "actionId": "act_4",
+    "status": "started",
+    "message": "Running wait: Pause so activity looks organic before the next step."
+  },
+  {
+    "timestamp": "2026-05-28T19:48:58.892Z",
+    "goalId": "goal_c7e027dd7a2b",
+    "planId": "plan_40a7e5ef1fdc",
+    "actionId": "act_4",
+    "status": "success",
+    "message": "Waited 5000ms (Pause so activity looks organic before the next step.)."
+  },
+  {
+    "timestamp": "2026-05-28T19:49:12.259Z",
+    "goalId": "goal_c7e027dd7a2b",
+    "planId": "plan_40a7e5ef1fdc",
+    "status": "info",
+    "message": "Paused 13365ms before next action."
+  },
+  {
+    "timestamp": "2026-05-28T19:49:12.260Z",
+    "goalId": "goal_c7e027dd7a2b",
+    "planId": "plan_40a7e5ef1fdc",
+    "actionId": "act_5",
+    "status": "started",
+    "message": "Running ad_preferences: https://www.instagram.com/accounts/ad_preferences/"
+  },
+  {
+    "timestamp": "2026-05-28T19:49:19.339Z",
+    "goalId": "goal_c7e027dd7a2b",
+    "planId": "plan_40a7e5ef1fdc",
+    "actionId": "act_5",
+    "status": "success",
+    "message": "Browsed Instagram at https://www.instagram.com/accounts/ad_preferences/ with slow scrolling (no sponsored clicks).",
+    "screenshotPath": "/screenshots/goal_c7e027dd7a2b/action-act_5.png"
+  },
+  {
+    "timestamp": "2026-05-28T19:49:19.408Z",
+    "goalId": "goal_c7e027dd7a2b",
+    "planId": "plan_40a7e5ef1fdc",
+    "status": "success",
+    "message": "Steering plan plan_40a7e5ef1fdc finished."
+  }
+]

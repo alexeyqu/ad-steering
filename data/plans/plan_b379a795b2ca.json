@@ -1,0 +1,54 @@
+{
+  "id": "plan_b379a795b2ca",
+  "goalId": "goal_c7e027dd7a2b",
+  "createdAt": "2026-05-28T19:43:46.687Z",
+  "actions": [
+    {
+      "id": "act_1",
+      "type": "search",
+      "query": "best electric kettles UK",
+      "reason": "Creates explicit organic commercial intent around electric kettles.",
+      "safetyNote": "Will not click sponsored Google results."
+    },
+    {
+      "id": "act_2",
+      "type": "search",
+      "query": "electric kettles reviews",
+      "reason": "Creates explicit organic commercial intent around electric kettles.",
+      "safetyNote": "Will not click sponsored Google results."
+    },
+    {
+      "id": "act_3",
+      "type": "search",
+      "query": "electric kettles deals UK",
+      "reason": "Creates explicit organic commercial intent around electric kettles.",
+      "safetyNote": "Will not click sponsored Google results."
+    },
+    {
+      "id": "act_4",
+      "type": "search",
+      "query": "electric kettles comparison",
+      "reason": "Creates explicit organic commercial intent around electric kettles.",
+      "safetyNote": "Will not click sponsored Google results."
+    },
+    {
+      "id": "act_5",
+      "type": "visit_url",
+      "url": "https://www.argos.co.uk/browse/appliances/kettles/c:29644/",
+      "reason": "Visits an organic retailer category page without clicking paid ads.",
+      "safetyNote": "Browses the category page only; no paid ad clicks."
+    },
+    {
+      "id": "act_6",
+      "type": "visit_url",
+      "url": "https://www.currys.co.uk/appliances/small-kitchen-appliances/kettles",
+      "reason": "Visits another relevant retailer category page.",
+      "safetyNote": "Browses the category page only; no paid ad clicks."
+    }
+  ],
+  "caveats": [
+    "Platform response is not guaranteed.",
+    "The agent will not click paid ads.",
+    "Results may be noisy in a short hackathon demo."
+  ]
+}
