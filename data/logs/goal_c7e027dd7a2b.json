@@ -239,5 +239,130 @@
     "planId": "plan_40a7e5ef1fdc",
     "status": "success",
     "message": "Steering plan plan_40a7e5ef1fdc finished."
+  },
+  {
+    "timestamp": "2026-05-28T20:02:29.551Z",
+    "goalId": "goal_c7e027dd7a2b",
+    "planId": "plan_40a7e5ef1fdc",
+    "status": "started",
+    "message": "Starting steering plan plan_40a7e5ef1fdc (5 actions, Instagram only)."
+  },
+  {
+    "timestamp": "2026-05-28T20:02:30.500Z",
+    "goalId": "goal_c7e027dd7a2b",
+    "planId": "plan_40a7e5ef1fdc",
+    "actionId": "act_1",
+    "status": "started",
+    "message": "Running browse_results: https://www.instagram.com/explore/search/keyword/?q=electric%20kettles"
+  },
+  {
+    "timestamp": "2026-05-28T20:02:40.894Z",
+    "goalId": "goal_c7e027dd7a2b",
+    "planId": "plan_40a7e5ef1fdc",
+    "actionId": "act_1",
+    "status": "success",
+    "message": "Browsed Instagram at https://www.instagram.com/explore/search/keyword/?q=electric%20kettles with slow scrolling (no sponsored clicks).",
+    "screenshotPath": "/screenshots/goal_c7e027dd7a2b/action-act_1.png"
+  },
+  {
+    "timestamp": "2026-05-28T20:02:51.792Z",
+    "goalId": "goal_c7e027dd7a2b",
+    "planId": "plan_40a7e5ef1fdc",
+    "status": "info",
+    "message": "Paused 10896ms before next action."
+  },
+  {
+    "timestamp": "2026-05-28T20:02:51.792Z",
+    "goalId": "goal_c7e027dd7a2b",
+    "planId": "plan_40a7e5ef1fdc",
+    "actionId": "act_2",
+    "status": "started",
+    "message": "Running wait: Pause so activity looks organic before the next step."
+  },
+  {
+    "timestamp": "2026-05-28T20:02:56.795Z",
+    "goalId": "goal_c7e027dd7a2b",
+    "planId": "plan_40a7e5ef1fdc",
+    "actionId": "act_2",
+    "status": "success",
+    "message": "Waited 5000ms (Pause so activity looks organic before the next step.)."
+  },
+  {
+    "timestamp": "2026-05-28T20:03:06.475Z",
+    "goalId": "goal_c7e027dd7a2b",
+    "planId": "plan_40a7e5ef1fdc",
+    "status": "info",
+    "message": "Paused 9677ms before next action."
+  },
+  {
+    "timestamp": "2026-05-28T20:03:06.475Z",
+    "goalId": "goal_c7e027dd7a2b",
+    "planId": "plan_40a7e5ef1fdc",
+    "actionId": "act_3",
+    "status": "started",
+    "message": "Running visit_url: https://www.instagram.com/explore/tags/electrickettles/"
+  },
+  {
+    "timestamp": "2026-05-28T20:03:16.469Z",
+    "goalId": "goal_c7e027dd7a2b",
+    "planId": "plan_40a7e5ef1fdc",
+    "actionId": "act_3",
+    "status": "success",
+    "message": "Browsed Instagram at https://www.instagram.com/explore/tags/electrickettles/ with slow scrolling (no sponsored clicks).",
+    "screenshotPath": "/screenshots/goal_c7e027dd7a2b/action-act_3.png"
+  },
+  {
+    "timestamp": "2026-05-28T20:03:27.570Z",
+    "goalId": "goal_c7e027dd7a2b",
+    "planId": "plan_40a7e5ef1fdc",
+    "status": "info",
+    "message": "Paused 11099ms before next action."
+  },
+  {
+    "timestamp": "2026-05-28T20:03:27.570Z",
+    "goalId": "goal_c7e027dd7a2b",
+    "planId": "plan_40a7e5ef1fdc",
+    "actionId": "act_4",
+    "status": "started",
+    "message": "Running wait: Pause so activity looks organic before the next step."
+  },
+  {
+    "timestamp": "2026-05-28T20:03:32.574Z",
+    "goalId": "goal_c7e027dd7a2b",
+    "planId": "plan_40a7e5ef1fdc",
+    "actionId": "act_4",
+    "status": "success",
+    "message": "Waited 5000ms (Pause so activity looks organic before the next step.)."
+  },
+  {
+    "timestamp": "2026-05-28T20:03:43.878Z",
+    "goalId": "goal_c7e027dd7a2b",
+    "planId": "plan_40a7e5ef1fdc",
+    "status": "info",
+    "message": "Paused 11301ms before next action."
+  },
+  {
+    "timestamp": "2026-05-28T20:03:43.879Z",
+    "goalId": "goal_c7e027dd7a2b",
+    "planId": "plan_40a7e5ef1fdc",
+    "actionId": "act_5",
+    "status": "started",
+    "message": "Running ad_preferences: https://www.instagram.com/accounts/ad_preferences/"
+  },
+  {
+    "timestamp": "2026-05-28T20:03:51.022Z",
+    "goalId": "goal_c7e027dd7a2b",
+    "planId": "plan_40a7e5ef1fdc",
+    "actionId": "act_5",
+    "status": "success",
+    "message": "Browsed Instagram at https://www.instagram.com/accounts/ad_preferences/ with slow scrolling (no sponsored clicks).",
+    "screenshotPath": "/screenshots/goal_c7e027dd7a2b/action-act_5.png"
+  },
+  {
+    "timestamp": "2026-05-28T20:03:51.111Z",
+    "goalId": "goal_c7e027dd7a2b",
+    "planId": "plan_40a7e5ef1fdc",
+    "status": "success",
+    "message": "Steering plan plan_40a7e5ef1fdc finished."
   }
 ]
