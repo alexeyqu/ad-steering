@@ -23,10 +23,7 @@ export default function DashboardPage() {
   const [positivePrompt, setPositivePrompt] = useState(
     "electric kettles, tea, kitchen appliances"
   );
-  const [negativePrompt, setNegativePrompt] = useState(
-    "crypto, gambling, payday loans, AI courses"
-  );
-  const [steeringHeadless, setSteeringHeadless] = useState(false);
+const [steeringHeadless, setSteeringHeadless] = useState(false);
   const [steering, setSteering] = useState(false);
   const [steeringError, setSteeringError] = useState<string | null>(null);
   const [steeringResult, setSteeringResult] = useState<{
@@ -94,7 +91,6 @@ export default function DashboardPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           rawPositivePrompt: positivePrompt,
-          rawNegativePrompt: negativePrompt,
           headless: steeringHeadless,
         }),
       });
@@ -146,18 +142,7 @@ export default function DashboardPage() {
               disabled={steering}
             />
           </label>
-          <label style={{ ...styles.label, width: "100%", maxWidth: 640, marginTop: 12 }}>
-            Ads I want fewer of
-            <textarea
-              value={negativePrompt}
-              onChange={(e) => setNegativePrompt(e.target.value)}
-              rows={2}
-              style={styles.textarea}
-              placeholder="crypto, gambling, payday loans"
-              disabled={steering}
-            />
-          </label>
-          <div style={{ ...styles.controls, marginTop: 12 }}>
+<div style={{ ...styles.controls, marginTop: 12 }}>
             <label style={styles.label}>
               Headless
               <select
