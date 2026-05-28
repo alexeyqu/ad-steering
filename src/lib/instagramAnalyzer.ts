@@ -10,7 +10,14 @@ import type {
   ScanOptions,
 } from "./types";
 
-const SPONSORED_LABELS = ["Sponsored", "Реклама", "Promoted"];
+// "Ad" is the English Instagram label (appears where the timestamp would be on organic posts).
+// Use word-boundary patterns for short labels to avoid false matches on "Address", etc.
+const SPONSORED_LABEL_PATTERNS = [
+  /\bAd\b/,
+  /\bSponsored\b/,
+  /\bPromoted\b/,
+  /\bРеклама\b/,
+];
 
 const CTA_LABELS = [
   "Shop now",
@@ -179,8 +186,8 @@ export async function scanInstagramFeed(options: ScanOptions): Promise<Instagram
         }
 
         // Check for sponsored labels
-        const sponsoredLabelFound = SPONSORED_LABELS.some((label) =>
-          rawText.includes(label)
+        const sponsoredLabelFound = SPONSORED_LABEL_PATTERNS.some((re) =>
+          re.test(rawText)
         );
 
         if (!sponsoredLabelFound) continue;
