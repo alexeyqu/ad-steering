@@ -20,12 +20,22 @@ export type InstagramAdCandidate = {
   extractionWarnings: string[];
 };
 
+export type InstagramOrganicPost = {
+  id: string;
+  scanId: string;
+  capturedAt: string;
+  authorHandle?: string;
+  rawText: string;
+  screenshotPath?: string;
+};
+
 export type InstagramScanResult = {
   scanId: string;
   startedAt: string;
   finishedAt: string;
   requestedScrolls: number;
   detectedAds: InstagramAdCandidate[];
+  organicPosts: InstagramOrganicPost[];
   logs: InstagramScanLogEntry[];
 };
 

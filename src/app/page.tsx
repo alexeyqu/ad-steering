@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import type { InstagramScanResult, InstagramAdCandidate } from "@/lib/types";
+import type { InstagramScanResult, InstagramAdCandidate, InstagramOrganicPost } from "@/lib/types";
 
 export default function Home() {
   const [scans, setScans] = useState<InstagramScanResult[]>([]);
@@ -220,6 +220,9 @@ export default function Home() {
                 </div>
               )}
 
+              <h3 style={{ ...styles.h2, fontSize: 15, marginBottom: 8 }}>
+                Ads ({selectedScan.detectedAds.length})
+              </h3>
               {selectedScan.detectedAds.length === 0 ? (
                 <p style={styles.muted}>No sponsored posts detected in this scan.</p>
               ) : (
@@ -228,6 +231,15 @@ export default function Home() {
                   expandedAds={expandedAds}
                   onToggle={toggleExpand}
                 />
+              )}
+
+              {(selectedScan.organicPosts ?? []).length > 0 && (
+                <>
+                  <h3 style={{ ...styles.h2, fontSize: 15, marginTop: 28, marginBottom: 8 }}>
+                    Organic posts ({selectedScan.organicPosts.length})
+                  </h3>
+                  <OrganicGrid posts={selectedScan.organicPosts} />
+                </>
               )}
             </section>
           )}
@@ -241,6 +253,39 @@ export default function Home() {
           It extracts visible text and links from the page DOM where available.
         </p>
       </footer>
+    </div>
+  );
+}
+
+function OrganicGrid({ posts }: { posts: InstagramOrganicPost[] }) {
+  return (
+    <div style={{ display: "flex", flexWrap: "wrap", gap: 12 }}>
+      {posts.map((post) => (
+        <div key={post.id} style={styles.organicCard}>
+          {post.screenshotPath ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={post.screenshotPath}
+              alt="organic post"
+              style={{ width: "100%", display: "block", borderRadius: "4px 4px 0 0", cursor: "pointer" }}
+              onClick={() => window.open(post.screenshotPath, "_blank")}
+            />
+          ) : (
+            <div style={{ height: 80, background: "#eee", borderRadius: "4px 4px 0 0", display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <span style={styles.muted}>no screenshot</span>
+            </div>
+          )}
+          <div style={{ padding: "6px 8px", fontSize: 12 }}>
+            {post.authorHandle ? (
+              <a href={`https://www.instagram.com/${post.authorHandle}/`} target="_blank" rel="noreferrer">
+                @{post.authorHandle}
+              </a>
+            ) : (
+              <span style={styles.muted}>unknown</span>
+            )}
+          </div>
+        </div>
+      ))}
     </div>
   );
 }
@@ -491,6 +536,14 @@ const styles = {
     color: "#c0392b",
   },
   muted: { color: "#888", fontSize: 13 },
+  organicCard: {
+    width: 160,
+    border: "1px solid #e0e0e0",
+    borderRadius: 6,
+    overflow: "hidden" as const,
+    background: "white",
+    boxShadow: "0 1px 3px rgba(0,0,0,0.06)",
+  },
   table: { width: "100%", borderCollapse: "collapse" as const, fontSize: 13 },
   th: {
     textAlign: "left" as const,

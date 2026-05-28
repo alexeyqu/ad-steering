@@ -5,6 +5,7 @@ import crypto from "crypto";
 import { v4 as uuidv4 } from "uuid";
 import type {
   InstagramAdCandidate,
+  InstagramOrganicPost,
   InstagramScanResult,
   InstagramScanLogEntry,
   ScanOptions,
@@ -102,6 +103,7 @@ export async function scanInstagramFeed(options: ScanOptions): Promise<Instagram
   const startedAt = new Date().toISOString();
   const logs: InstagramScanLogEntry[] = [];
   const detectedAds: InstagramAdCandidate[] = [];
+  const organicPosts: InstagramOrganicPost[] = [];
   const seenHashes = new Set<string>();
 
   function log(level: InstagramScanLogEntry["level"], message: string) {
@@ -161,7 +163,7 @@ export async function scanInstagramFeed(options: ScanOptions): Promise<Instagram
     } catch {
       log("error", "No feed articles found. Instagram feed may not be visible.");
       log("warn", "No sponsored posts detected. This may mean Instagram did not show ads during this scan, or the DOM labels were not visible.");
-      return buildResult(scanId, startedAt, options.maxScrolls, detectedAds, logs);
+      return buildResult(scanId, startedAt, options.maxScrolls, detectedAds, organicPosts, logs);
     }
 
     // Scroll loop
@@ -190,7 +192,43 @@ export async function scanInstagramFeed(options: ScanOptions): Promise<Instagram
           re.test(rawText)
         );
 
-        if (!sponsoredLabelFound) continue;
+        if (!sponsoredLabelFound) {
+          // Capture organic post screenshot for context
+          const hash = adHash(undefined, rawText);
+          if (!seenHashes.has(hash)) {
+            seenHashes.add(hash);
+            const organicIndex = organicPosts.length;
+            const organicFileName = `organic-${organicIndex}.png`;
+            const organicAbsPath = path.join(screenshotDir, organicFileName);
+            const organicWebPath = `/screenshots/${scanId}/${organicFileName}`;
+            let screenshotPath: string | undefined;
+            try {
+              await article.screenshot({ path: organicAbsPath });
+              screenshotPath = organicWebPath;
+            } catch {
+              // best-effort; no warning logged for organic posts
+            }
+            // Extract author handle from the first profile link
+            const linkEls = await article.$$("a[href]");
+            let authorHandle: string | undefined;
+            for (const el of linkEls) {
+              const href = await el.getAttribute("href");
+              if (href && !isExcludedPath(href)) {
+                authorHandle = extractHandle(href);
+                if (authorHandle) break;
+              }
+            }
+            organicPosts.push({
+              id: uuidv4(),
+              scanId,
+              capturedAt: new Date().toISOString(),
+              authorHandle,
+              rawText,
+              screenshotPath,
+            });
+          }
+          continue;
+        }
 
         // Extract all links
         const linkElements = await article.$$("a[href]");
@@ -277,7 +315,7 @@ export async function scanInstagramFeed(options: ScanOptions): Promise<Instagram
       log("warn", "No sponsored posts detected. This may mean Instagram did not show ads during this scan, or the DOM labels were not visible.");
     }
 
-    log("info", `Scan complete. Detected ${detectedAds.length} ads.`);
+    log("info", `Scan complete. Detected ${detectedAds.length} ads, ${organicPosts.length} organic posts.`);
   } catch (err) {
     log("error", `Unexpected error during scan: ${err}`);
   } finally {
@@ -289,7 +327,7 @@ export async function scanInstagramFeed(options: ScanOptions): Promise<Instagram
     }
   }
 
-  return buildResult(scanId, startedAt, options.maxScrolls, detectedAds, logs);
+  return buildResult(scanId, startedAt, options.maxScrolls, detectedAds, organicPosts, logs);
 }
 
 function buildResult(
@@ -297,6 +335,7 @@ function buildResult(
   startedAt: string,
   requestedScrolls: number,
   detectedAds: InstagramAdCandidate[],
+  organicPosts: InstagramOrganicPost[],
   logs: InstagramScanLogEntry[]
 ): InstagramScanResult {
   return {
@@ -305,6 +344,7 @@ function buildResult(
     finishedAt: new Date().toISOString(),
     requestedScrolls,
     detectedAds,
+    organicPosts,
     logs,
   };
 }
