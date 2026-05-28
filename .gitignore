@@ -1,0 +1,19 @@
+node_modules/
+.next/
+dist-scanner/
+
+# Auth state — never commit session tokens
+.auth/
+
+# Scan data — local only
+data/scans/
+public/screenshots/
+
+# Env
+.env
+.env.local
+.env*.local
+
+# OS
+.DS_Store
+Thumbs.db
